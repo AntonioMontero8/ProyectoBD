@@ -1,9 +1,14 @@
 import customtkinter as ctk
 from utils.helpers import limpiar_ventana
+from utils.entidades import Vehiculo
 from DataBase.vehiculos_bd import vehiculos_bd
 from myCustomTkinter import mostrar_mensaje
 
+veh_bd = vehiculos_bd()
+modo = None
 def pantalla_vehiculos(ventana, dueno_id= None, callback_guardar=None):
+    global modo #Cuando True = editar, False = nuevo, None = No especificado
+    modo = None
     try:
         limpiar_ventana(ventana)
     except:
@@ -92,16 +97,6 @@ def pantalla_vehiculos(ventana, dueno_id= None, callback_guardar=None):
             entry.configure(state="normal")
             entry.delete(0,"end")
 
-    # Lógica para cancelar
-    def cancelar():
-        if callback_guardar:
-            print(entries["ID del dueño:"].get())
-            ventana.destroy()
-        else:
-            clean_entries()
-            btn_editar.configure(state="disabled")
-            btn_eliminar.configure(state="disabled")
-
     def buscar():
         veh = vehiculos_bd()
         res = veh.buscar(entry_buscar.get())
@@ -109,31 +104,91 @@ def pantalla_vehiculos(ventana, dueno_id= None, callback_guardar=None):
             mostrar_mensaje("", "vehiculo no encontrado")
         else:
             clean_entries()
-            for i, entry in enumerate(entries.values()):
-                entry.insert(0,res[i])
+            # res: (matricula, modelo, marca, color, cliente_id)
+            entries["matricula:"].insert(0, res[0])
+            entries["modelo:"].insert(0, res[1])
+            entries["marca:"].insert(0, res[2])
+            entries["Color:"].insert(0, res[3])
+            entries["ID del dueño:"].insert(0, res[4])
+            
+            for entry in entries.values():
                 entry.configure(state="disabled")
 
-            btn_editar.configure(state="normal")
-            btn_eliminar.configure(state="normal")
-    btn_buscar.configure(command=buscar)
+            if not callback_guardar:
+                btn_editar.configure(state="normal")
+                btn_eliminar.configure(state="normal")
+
+    def eliminar():
+        matricula = entries["matricula:"].get()
+        veh_bd.eliminar(matricula)
+
+    def editar():
+        global modo
+        for entry in entries.values():
+            entry.configure(state="normal")
+        entries["matricula:"].configure(state="disabled")
+
+        modo = True
+
+    def nuevo():
+        global modo
+        clean_entries()
+        btn_eliminar.configure(state="disabled")
+        btn_editar.configure(state="disabled")
+        modo = False
+
+    # Solo configuramos comandos si los botones existen (modo completo)
+    if not callback_guardar:
+        btn_buscar.configure(command=buscar)
+        btn_eliminar.configure(command=eliminar)
+        btn_editar.configure(command=editar)
+        btn_nuevo.configure(command=nuevo)
+
+    # Lógica para cancelar
+    def cancelar():
+        if callback_guardar:
+            print(entries["ID del dueño:"].get())
+            ventana.destroy()
+        else:
+            global modo
+            clean_entries()
+            btn_editar.configure(state="disabled")
+            btn_eliminar.configure(state="disabled")
+            modo = None
 
     btn_cancelar = ctk.CTkButton(frame_bottom, text="cancelar", width=120, command=cancelar)
     btn_cancelar.pack(side="left", padx=10)
 
     # Lógica para guardar
-    def accion_guardar():
-        # Obtenemos la matrícula para el OptionMenu
-        id_registrado = entries["matricula:"].get()
-        
-        if callback_guardar:
-            callback_guardar(id_registrado)
-        
-        # Si es un popup, cerramos al guardar
-        if callback_guardar:
-            ventana.destroy()
-        
+    def guardar():
+        global modo
+        veh = Vehiculo()
+        veh.set_matricula(entries["matricula:"].get())
+        veh.set_modelo(entries["modelo:"].get())
+        veh.set_marca(entries["marca:"].get())
+        veh.set_color(entries["Color:"].get())
+        veh.set_cliente_id(entries["ID del dueño:"].get())
 
-    btn_guardar = ctk.CTkButton(frame_bottom, text="guardar", width=120, command=accion_guardar)
+        if modo == False:
+            res = veh_bd.guardar(veh)
+
+            mostrar_mensaje("",res[1])
+
+            if callback_guardar and res[0]:
+                callback_guardar(veh.get_matricula())
+                ventana.destroy()
+
+        elif modo == True:
+            res = veh_bd.editar(veh)
+            mostrar_mensaje("",res[1])
+            if res[0]:
+                entry_buscar.delete(0,"end")
+                entry_buscar.insert(0, entries["matricula:"].get())
+                buscar()
+
+                modo = None
+        
+    btn_guardar = ctk.CTkButton(frame_bottom, text="guardar", width=120, command=guardar)
     btn_guardar.pack(side="left", padx=10)
 
 if __name__ == "__main__":
