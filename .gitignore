@@ -1,0 +1,21 @@
+# Entornos virtuales (¡Muy importante para que no suban miles de librerías!)
+venv/
+env/
+.venv/
+
+# Archivos compilados de Python (Los que causan conflictos binarios)
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Configuraciones locales del editor
+.vscode/
+
+# Archivos de entorno del sistema operativo
+.DS_Store
+Thumbs.db
+
+# Si en el futuro usan variables de entorno para las contraseñas de MySQL
+.env
+*.png
+!ojo_*.png
