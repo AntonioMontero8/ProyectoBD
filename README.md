@@ -18,3 +18,5 @@ Instrucciones_Instalacion:
 
 main:
     El archivo a ejecutar para correr la aplicación
+
+Esta linea es una prueba para comprobar que gitignore funciona
