@@ -161,3 +161,34 @@ class Vehiculo:
 
     def set_cliente_id(self, valor):
         self._cliente_id = valor
+
+class Estacionamiento:
+    def __init__(self):
+        self._estacionamiento_id = 0
+        self._nombre = ""
+        self._cantidad_cajones = 0
+        self._direccion = ""
+
+    def get_estacionamiento_id(self):
+        return self._estacionamiento_id
+
+    def set_estacionamiento_id(self, valor):
+        self._estacionamiento_id = valor
+
+    def get_nombre(self):
+        return self._nombre
+
+    def set_nombre(self, valor):
+        self._nombre = valor
+
+    def get_cantidad_cajones(self):
+        return self._cantidad_cajones
+
+    def set_cantidad_cajones(self, valor):
+        self._cantidad_cajones = valor
+
+    def get_direccion(self):
+        return self._direccion
+
+    def set_direccion(self, valor):
+        self._direccion = valor
