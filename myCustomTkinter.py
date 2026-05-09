@@ -253,6 +253,7 @@ def mostrar_mensaje(titulo, mensaje):
 
     ventana_msg.title(titulo)
     ventana_msg.geometry("300x150")
+    ventana_msg.grab_set()
 
     lbl = ctk.CTkLabel(
         ventana_msg,
@@ -269,41 +270,60 @@ def mostrar_mensaje(titulo, mensaje):
     )
 
     btn.pack(pady=10)
-# --- DEMO DE USO ---
-if __name__ == "__main__":
-    try:
-        from ctypes import windll
-        windll.shcore.SetProcessDpiAwareness(1)
-    except:
-        pass
 
-    ctk.set_widget_scaling(1.0)
-    ctk.set_window_scaling(1.0)
+    # Enter activa aceptar
+    ventana_msg.bind("<Return>", lambda event: ventana_msg.destroy())
 
-    ctk.set_appearance_mode("dark")
-    ctk.set_default_color_theme("blue")
+def confirmar_mensaje(titulo, mensaje):
 
-    root = ctk.CTk()
-    root.geometry("400x350")
-    root.title("Demo DatePicker Reducido")
+    resultado = {"respuesta": False}
 
-    frame = ctk.CTkFrame(root, fg_color="transparent")
-    frame.pack(pady=20, padx=20, fill="x")
+    ventana_msg = ctk.CTkToplevel()
 
-    ctk.CTkLabel(frame, text="Fecha 1:").grid(row=0, column=0, padx=5, pady=8, sticky="e")
-    f1 = DatePicker(frame,width=100)
-    f1.grid(row=0, column=1, padx=5, pady=8, sticky="w")
+    ventana_msg.title(titulo)
+    ventana_msg.geometry("300x150")
+    ventana_msg.grab_set()
 
-    ctk.CTkLabel(frame, text="Fecha 2:").grid(row=1, column=0, padx=5, pady=8, sticky="e")
-    f2 = DatePicker(frame)
-    f2.grid(row=1, column=1, padx=5, pady=8, sticky="w")
+    lbl = ctk.CTkLabel(
+        ventana_msg,
+        text=mensaje,
+        wraplength=250
+    )
 
-    ctk.CTkLabel(frame, text="Fecha 3:").grid(row=2, column=0, padx=5, pady=8, sticky="e")
-    f3 = DatePicker(frame,width=200)
-    f3.grid(row=2, column=1, padx=5, pady=8, sticky="w")
+    lbl.pack(pady=20)
 
-    def mostrar():
-        messagebox.showinfo("Fechas seleccionadas", f"{f1.get()}\n{f2.get()}\n{f3.get()}")
+    frame_botones = ctk.CTkFrame(ventana_msg, fg_color="transparent")
+    frame_botones.pack(pady=10)
 
-    ctk.CTkButton(root, text="Mostrar", command=mostrar).pack(pady=20)
-    root.mainloop()
+    def confirmar():
+        resultado["respuesta"] = True
+        ventana_msg.destroy()
+
+    def cancelar():
+        resultado["respuesta"] = False
+        ventana_msg.destroy()
+
+    btn_no = ctk.CTkButton(
+        frame_botones,
+        text="Cancelar",
+        command=cancelar,
+        width=80
+    )
+
+    btn_no.pack(side="left", padx=10)
+
+    btn_si = ctk.CTkButton(
+        frame_botones,
+        text="Aceptar",
+        command=confirmar,
+        width=80
+    )
+
+    btn_si.pack(side="left", padx=10)
+
+    # Enter activa aceptar
+    ventana_msg.bind("<Return>", lambda event: confirmar)
+
+    ventana_msg.wait_window()
+
+    return resultado["respuesta"]
