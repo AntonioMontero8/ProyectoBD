@@ -162,12 +162,102 @@ class Vehiculo:
     def set_cliente_id(self, valor):
         self._cliente_id = valor
 
+class Servicio:
+    def __init__(self):        
+        self._folio_servicio = 0
+        self._estacionamiento_id = 0
+        self._matricula = ""
+        self._fecha_entrada = ""
+        self._hora_entrada = ""
+        self._fecha_salida = ""
+        self._hora_salida = ""
+        self._folio_precio = 0
+        self._tipo_servicio = ""
+
+    def get_folio_servicio(self):
+        return self._folio_servicio
+
+    def set_folio_servicio(self, valor):
+        self._folio_servicio= valor
+
+    def get_estacionamiento_id(self):
+        return self._estacionamiento_id
+
+    def set_estacionamiento_id(self, valor):
+        self._estacionamiento_id = valor
+
+    def get_matricula(self):
+        return self._matricula
+
+    def set_matricula(self, valor):
+        self._matricula = valor
+
+    def get_fecha_entrada(self):
+        return self._fecha_entrada
+
+    def set_fecha_entrada(self, valor):
+        self._fecha_entrada = valor
+
+    def get_hora_entrada(self):
+        return self._hora_entrada
+
+    def set_hora_entrada(self, valor):
+        self._hora_entrada = valor
+
+    def get_fecha_salida(self):
+        return self._fecha_salida
+
+    def set_fecha_salida(self, valor):
+        self._fecha_salida = valor
+
+    def get_hora_salida(self):
+        return self._hora_salida
+
+    def set_hora_salida(self, valor):
+        self._hora_salida = valor
+
+    def get_folio_precio(self):
+        return self._folio_precio
+
+    def set_folio_precio(self, valor):
+        self._folio_precio = valor
+
+    def get_tipo_servicio(self):
+        return self._tipo_servicio
+
+    def set_tipo_servicio(self, valor):
+        self._tipo_servicio = valor
+
+class Precio:
+    def __init__(self):        
+        self._folio_precio = 0
+        self._tipo = ""
+        self._monto = 0
+
+    def get_folio_precio(self):
+        return self._folio_precio
+
+    def set_folio_precio(self, valor):
+        self._folio_precio= valor
+
+    def get_tipo(self):
+        return self._tipo
+
+    def set_tipo(self, valor):
+        self._tipo = valor
+
+    def get_monto(self):
+        return self._monto
+
+    def set_monto(self, valor):
+        self._monto = valor
+
 class Estacionamiento:
-    def __init__(self):
+    def __init__(self):        
         self._estacionamiento_id = 0
         self._nombre = ""
-        self._cantidad_cajones = 0
         self._direccion = ""
+        self._cantidad_cajones = 0
 
     def get_estacionamiento_id(self):
         return self._estacionamiento_id
@@ -181,14 +271,52 @@ class Estacionamiento:
     def set_nombre(self, valor):
         self._nombre = valor
 
+    def get_direccion(self):
+        return self._direccion
+
+    def set_direccion(self, valor):
+        self._direccion = valor
+    
     def get_cantidad_cajones(self):
         return self._cantidad_cajones
 
     def set_cantidad_cajones(self, valor):
         self._cantidad_cajones = valor
 
-    def get_direccion(self):
-        return self._direccion
+class Cobro:
+    def __init__(self):        
+        self._folio_cobro = ""
+        self._folio_servicio = 0
+        self._tiempo_estancia = ""
+        self._usuario_id = 0
+        self._monto_total = 0
 
-    def set_direccion(self, valor):
-        self._direccion = valor
+    def get_folio_cobro(self):
+        return self._folio_cobro
+
+    def set_folio_cobro(self, valor):
+        self._folio_cobro = valor
+
+    def get_folio_servicio(self):
+        return self._folio_servicio
+
+    def set_folio_servicio(self, valor):
+        self._folio_servicio = valor
+
+    def get_tiempo_estancia(self):
+        return self._tiempo_estancia
+
+    def set_tiempo_estancia(self, valor):
+        self._tiempo_estancia = valor
+    
+    def get_usuario_id(self):
+        return self._usuario_id
+
+    def set_usuario_id(self, valor):
+        self._usuario_id = valor
+    
+    def get_monto_total(self):
+        return self._monto_total
+
+    def set_monto_total(self, valor):
+        self._monto_total = valor
