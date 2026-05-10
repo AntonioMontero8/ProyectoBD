@@ -14,19 +14,21 @@ def pantalla_vehiculos(ventana, dueno_id= None, callback_guardar=None):
         if texto == "":
             return True
 
-        patron = r"^[A-Za-z]{0,3}[0-9]{0,3}$"
+        patron = r"^[A-Za-z]{0,2}[0-9]{0,4}$"
         return re.match(patron, texto) is not None
 
     # CONVERTIR A MAYÚSCULAS
     def convertir_mayusculas(event):
-        posicion = entries["matricula:"].index("insert")
+        entry = event.widget
 
-        texto = entries["matricula:"].get().upper()
+        posicion = entry.index("insert")
 
-        entries["matricula:"].delete(0, "end")
-        entries["matricula:"].insert(0, texto)
+        texto = entry.get().upper()
 
-        entries["matricula:"].icursor(posicion)
+        entry.delete(0, "end")
+        entry.insert(0, texto)
+
+        entry.icursor(posicion)
 
     v_matricula = ventana.register(validar_matricula)
 
@@ -79,7 +81,8 @@ def pantalla_vehiculos(ventana, dueno_id= None, callback_guardar=None):
 
         entry_buscar = ctk.CTkEntry(frame_top, width=200)
         entry_buscar.grid(row=1, column=1, padx=5)
-        entry_buscar.configure(validate="key",validatecommand=(v_numero, "%P"))
+        entry_buscar.configure(validate="key",validatecommand=(v_matricula, "%P"))
+        entry_buscar.bind("<KeyRelease>", convertir_mayusculas)
 
         btn_buscar = ctk.CTkButton(frame_top, text="buscar", width=100)
         btn_buscar.grid(row=1, column=2, padx=5)
@@ -209,6 +212,9 @@ def pantalla_vehiculos(ventana, dueno_id= None, callback_guardar=None):
         else:
             global modo
             clean_entries()
+            for entry in entries.values():
+                entry.configure(state = "disabled")
+
             btn_editar.configure(state="disabled")
             btn_eliminar.configure(state="disabled")
 
@@ -231,7 +237,12 @@ def pantalla_vehiculos(ventana, dueno_id= None, callback_guardar=None):
             if entry.get() == "":
                 mostrar_mensaje("","Es nesesario llenar\ntodos los campos")
                 return
-            
+
+        patron = r"^[A-Z]{2,2}[0-9]{4,4}$"
+        if re.match(patron, texto) is None:
+            mostrar_mensaje("","la matricula debe tener\nel formato 'AA0000'")
+            return
+
         veh = Vehiculo()
         veh.set_matricula(entries["matricula:"].get())
         veh.set_modelo(entries["modelo:"].get())
@@ -245,7 +256,7 @@ def pantalla_vehiculos(ventana, dueno_id= None, callback_guardar=None):
             mostrar_mensaje("",res[1])
 
             if res[0]:
-                if callback_guardar and res[0]:
+                if callback_guardar and res:
                     callback_guardar(veh.set_matricula)
                     ventana.destroy()
                 else:
