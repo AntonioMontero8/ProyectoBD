@@ -6,6 +6,7 @@ from DataBase.precios_bd import precio_bd
 from DataBase.cliente_bd import cliente_bd
 from DataBase.vehiculos_bd import vehiculos_bd
 from DataBase.estacionamientos_bd import estacionamiento_bd
+from DataBase.cobros_bd import cobro_bd
 from datetime import datetime
 
 from utils.helpers import limpiar_ventana
@@ -40,7 +41,7 @@ def pantalla_servicios(ventana,scaner):
     # =====================================================
     lbl_titulo = ctk.CTkLabel(
         ventana,
-        text="servicios",
+        text="SERVICIOS",
         font=ctk.CTkFont(size=32, weight="bold")
     )
 
@@ -71,7 +72,7 @@ def pantalla_servicios(ventana,scaner):
 
     btn_nuevo = ctk.CTkButton(
         frame_top,
-        text="nuevo",
+        text="Nuevo",
         width=100
     )
     btn_nuevo.pack(side="left", padx=5)
@@ -80,7 +81,7 @@ def pantalla_servicios(ventana,scaner):
 
     lbl_id = ctk.CTkLabel(
         frame_top,
-        text="ID servicio:"
+        text="ID del servicio:"
     )
     lbl_id.pack(side="left", padx=(20, 5))
 
@@ -96,7 +97,7 @@ def pantalla_servicios(ventana,scaner):
 
     btn_buscar = ctk.CTkButton(
         frame_top,
-        text="buscar",
+        text="Buscar",
         width=100
     )
     btn_buscar.pack(side="left", padx=5)
@@ -142,8 +143,6 @@ def pantalla_servicios(ventana,scaner):
         #Vaciamos el contenido de ambos frames para dejarlos como al inicio
         limpiar_ventana(frame_izquierdo)
         limpiar_ventana(frame_derecho)
-
-    #region vistas frame
     
     # =========================================================
     # VISTA IZQUIERDA
@@ -154,9 +153,12 @@ def pantalla_servicios(ventana,scaner):
         limpiar_ventana(frame)
 
         # ---------------- GRID ----------------
-        frame.grid_rowconfigure(0, weight=1)
-        frame.grid_rowconfigure(1, weight=0)
-        frame.grid_rowconfigure(2, weight=1)
+        # Fila 0 (Título): No se estira
+        frame.grid_rowconfigure(0, weight=0)
+        # Fila 1 (Datos): SE ESTIRA (weight=1) para ocupar el espacio central
+        frame.grid_rowconfigure(1, weight=1)
+        # Fila 2 (Botones): No se estira, se queda abajo
+        frame.grid_rowconfigure(2, weight=0)
         frame.grid_columnconfigure(0, weight=1)
 
         # ---------------- TITULO ----------------
@@ -165,15 +167,16 @@ def pantalla_servicios(ventana,scaner):
             text="Detalles del Servicio",
             font=ctk.CTkFont(size=26, weight="bold")
         )
-        titulo.grid(row=0, column=0, pady=(20, 10), sticky="s")
+        # Cambiamos sticky a "n" para que siempre esté arriba
+        titulo.grid(row=0, column=0, pady=(20, 10), sticky="n")
 
         # ---------------- DATOS DE LA BD ----------------
-        #Aquí conseguimos toda la información de la BD para consultar servicios
-        frame_datos = ctk.CTkFrame(frame)
-        frame_datos.grid(row=1, column=0, padx=20, pady=10)
+        # Cambiamos CTkFrame por CTkScrollableFrame para que si crece, ruede.
+        frame_datos = ctk.CTkScrollableFrame(frame, width=400, height=350) 
+        frame_datos.grid(row=1, column=0, padx=20, pady=10, sticky="nsew")
         frame_datos.grid_columnconfigure(1, weight=1)
 
-        #Preparamos los datos de la bd
+        # Preparamos los datos de la bd iniciales
         datos_mostrar = [
             ("Folio:", servicio_encontrado.get_folio_servicio()),
             ("Matrícula:", servicio_encontrado.get_matricula()),
@@ -183,24 +186,53 @@ def pantalla_servicios(ventana,scaner):
             ("ID Estacionamiento:", servicio_encontrado.get_estacionamiento_id())
         ]
 
-        #Validamos si ya tiene fecha y hora de salida
+        # Validamos si ya tiene fecha y hora de salida
         fecha_salida = servicio_encontrado.get_fecha_salida()
         hora_salida = servicio_encontrado.get_hora_salida()
         
         servicio_pagado = False
         
-        #Aquí es para mostrar Fecha y Hora de Salida en caso de que no esten vacios
+        # LÓGICA DE SALIDA Y COBROS
         if fecha_salida and hora_salida: 
             datos_mostrar.append(("Fecha Salida:", fecha_salida))
             datos_mostrar.append(("Hora Salida:", hora_salida))
+            
+            # --- Buscar los detalles del cobro ---
+            cobro_temp = entidades.Cobro()
+            cobro_temp.set_folio_servicio(servicio_encontrado.get_folio_servicio())
+            
+            db_cobro = cobro_bd() 
+            cobro_encontrado = db_cobro.BuscarCobro(cobro_temp)
+            
+            if cobro_encontrado:
+                # Quitamos toda la lógica de unidad_tiempo y concatenación
+                # porque tu base de datos ya trae la unidad incluida
+                tiempo_estancia_db = cobro_encontrado.get_tiempo_estancia()
+                
+                datos_mostrar.append(("Tiempo de estancia:", tiempo_estancia_db))
+                datos_mostrar.append(("Usuario que cobró:", cobro_encontrado.get_usuario_id()))
+                datos_mostrar.append(("Monto:", f"${float(cobro_encontrado.get_monto_total()):.2f}"))
+            
+            # Se añade el estado al final de la lista
+            datos_mostrar.append(("Estado:", "Pagado"))
             servicio_pagado = True
+        else:
+            # Si no hay fecha de salida, solo añadimos el estado al final
+            datos_mostrar.append(("Estado:", "Sin pagar"))
 
-        #Imprimimos cada dato en el frame
+        # Imprimimos cada dato en el frame
         for i, (label_text, valor) in enumerate(datos_mostrar):
             lbl_campo = ctk.CTkLabel(frame_datos, text=label_text, font=ctk.CTkFont(weight="bold"))
             lbl_campo.grid(row=i, column=0, padx=10, pady=5, sticky="e")
             
-            lbl_valor = ctk.CTkLabel(frame_datos, text=str(valor))
+            # Si el estado es "Sin pagar", podemos ponerle color rojo, y verde si es "Pagado"
+            color_texto = ["default_theme"]
+            if label_text == "Estado:":
+                color_texto = "red" if valor == "Sin pagar" else "green"
+                lbl_valor = ctk.CTkLabel(frame_datos, text=str(valor), text_color=color_texto, font=ctk.CTkFont(weight="bold"))
+            else:
+                lbl_valor = ctk.CTkLabel(frame_datos, text=str(valor))
+                
             lbl_valor.grid(row=i, column=1, padx=10, pady=5, sticky="w")
 
         # ---------------- BOTONES ----------------
@@ -209,20 +241,21 @@ def pantalla_servicios(ventana,scaner):
 
         btn_cancelar = ctk.CTkButton(
             frame_bottom, 
-            text="cerrar", 
+            text="Cancelar", 
             width=120, 
             command=estado_inicial
         )
         btn_cancelar.pack(side="left", padx=10)
 
-        #Aquí definimos el estado del boton para verificar si el servicio ya se pago o no
+        # Aquí definimos el estado del boton para verificar si el servicio ya se pago o no
         estado_boton = "disabled" if servicio_pagado else "normal"
 
         btn_proceder_pago = ctk.CTkButton(
             frame_bottom,
             text="Proceder a pago",
             width=120,
-            command=lambda: vista_pagar_servicio(frame),
+            # DEBES CAMBIAR ESTA LÍNEA ASÍ:
+            command=lambda: vista_pagar_servicio(frame, servicio_encontrado),
             state=estado_boton
         )
         btn_proceder_pago.pack(side="left", padx=10)
@@ -407,13 +440,20 @@ def pantalla_servicios(ventana,scaner):
             nuevo_servicio.set_hora_salida("")
             nuevo_servicio.set_folio_precio(0)
 
-            #Llamamos al método para guardar entradas en la base de datos
+            # Llamamos al método para guardar entradas en la base de datos
             db_servicio = servicios_bd()
             exito = db_servicio.Guardar_Servicio(nuevo_servicio)
 
             if exito:
                 folio_generado = nuevo_servicio.get_folio_servicio()
                 lbl_mensaje_guardar.configure(text=f"Servicio guardado exitosamente. Folio: {folio_generado}", text_color="green")
+                
+                # =========================================================
+                # MAGIA AQUÍ: Mandamos llamar a la vista QR en el panel derecho
+                # =========================================================
+                vista_qr(frame_derecho, str(folio_generado))
+                btn_guardar.configure(state="disabled")
+                btn_cancelar.configure(text="Regresar")
             else:
                 lbl_mensaje_guardar.configure(text="Error al intentar guardar el servicio.", text_color="red")
 
@@ -443,113 +483,293 @@ def pantalla_servicios(ventana,scaner):
     # PAGAR SERVICIO
     # =========================================================
 
-    def vista_pagar_servicio(frame):
+    # =========================================================
+    # VISTA IZQUIERDA
+    # PAGAR SERVICIO
+    # =========================================================
+
+    def vista_pagar_servicio(frame, servicio_encontrado):
         limpiar_ventana(frame)
 
         # ---------------- GRID ----------------
-
-        frame.grid_rowconfigure(0, weight=1)
-        frame.grid_rowconfigure(1, weight=0)
-        frame.grid_rowconfigure(2, weight=1)
-
+        frame.grid_rowconfigure(0, weight=0)
+        frame.grid_rowconfigure(1, weight=1)
+        frame.grid_rowconfigure(2, weight=0)
         frame.grid_columnconfigure(0, weight=1)
 
         # ---------------- TITULO ----------------
-
         titulo = ctk.CTkLabel(
             frame,
             text="Pagar servicio",
             font=ctk.CTkFont(size=26, weight="bold")
         )
+        titulo.grid(row=0, column=0, pady=(20, 10), sticky="n")
 
-        titulo.grid(
-            row=0,
-            column=0,
-            pady=(20, 10),
-            sticky="s"
-        )
+        # ---------------- CONTENEDOR PRINCIPAL (Scroll) ----------------
+        frame_form = ctk.CTkScrollableFrame(frame, width=450, height=450)
+        frame_form.grid(row=1, column=0, padx=20, pady=10, sticky="nsew")
+        frame_form.grid_columnconfigure(1, weight=1)
 
-        # ---------------- FORMULARIO ----------------
+        # ---------------- DATOS FIJOS (Solo lectura) ----------------
+        datos_fijos = [
+            ("Folio del servicio:", servicio_encontrado.get_folio_servicio()),
+            ("Matrícula:", servicio_encontrado.get_matricula()),
+            ("Tipo de servicio:", servicio_encontrado.get_tipo_servicio().capitalize()),
+            ("Fecha de Entrada:", servicio_encontrado.get_fecha_entrada()),
+            ("Hora de Entrada:", servicio_encontrado.get_hora_entrada()),
+            ("ID Estacionamiento:", servicio_encontrado.get_estacionamiento_id())
+        ]
 
-        frame_form = ctk.CTkFrame(frame)
+        for i, (label_text, valor) in enumerate(datos_fijos):
+            lbl_campo = ctk.CTkLabel(frame_form, text=label_text, font=ctk.CTkFont(weight="bold"))
+            lbl_campo.grid(row=i, column=0, padx=10, pady=5, sticky="e")
+            lbl_valor = ctk.CTkLabel(frame_form, text=str(valor))
+            lbl_valor.grid(row=i, column=1, padx=10, pady=5, sticky="w")
 
-        frame_form.grid(
-            row=1,
-            column=0,
-            padx=20,
-            pady=10
-        )
+        fila_actual = len(datos_fijos)
 
-        lbl_id_servicio = ctk.CTkLabel(frame_form, text="ID servicio:")
-        lbl_id_servicio.grid(row=0, column=0, padx=10, pady=8, sticky="e")
+        # Separador visual
+        separador = ctk.CTkFrame(frame_form, height=2, fg_color="gray")
+        separador.grid(row=fila_actual, column=0, columnspan=2, sticky="we", padx=10, pady=15)
+        fila_actual += 1
 
-        entry_id_servicio = ctk.CTkEntry(frame_form, width=300)
-        entry_id_servicio.grid(row=0, column=1, padx=10, pady=8)
-        entry_id_servicio.insert(0,entry_id.get())
+        # ---------------- ENTRADAS DEL OPERADOR ----------------
+        
+        # 1. Usuario
+        lbl_usuario = ctk.CTkLabel(frame_form, text="ID Usuario:", font=ctk.CTkFont(weight="bold"))
+        lbl_usuario.grid(row=fila_actual, column=0, padx=10, pady=8, sticky="e")
+        entry_usuario = ctk.CTkEntry(frame_form, width=200)
+        entry_usuario.grid(row=fila_actual, column=1, padx=10, pady=8, sticky="w")
+        fila_actual += 1
 
-        # ---------------------------------------------------
+        # 2. Fecha Salida
+        lbl_fsalida = ctk.CTkLabel(frame_form, text="Fecha de salida:", font=ctk.CTkFont(weight="bold"))
+        lbl_fsalida.grid(row=fila_actual, column=0, padx=10, pady=8, sticky="e")
+        entry_fsalida = ctk.CTkEntry(frame_form, width=200, placeholder_text="AAAA-MM-DD")
+        entry_fsalida.grid(row=fila_actual, column=1, padx=10, pady=8, sticky="w")
+        fila_actual += 1
 
-        lbl_vehiculo = ctk.CTkLabel(frame_form, text="vehículo:")
-        lbl_vehiculo.grid(row=1, column=0, padx=10, pady=8, sticky="e")
+        # 3. Hora Salida
+        lbl_hsalida = ctk.CTkLabel(frame_form, text="Hora de salida:", font=ctk.CTkFont(weight="bold"))
+        lbl_hsalida.grid(row=fila_actual, column=0, padx=10, pady=8, sticky="e")
+        entry_hsalida = ctk.CTkEntry(frame_form, width=200, placeholder_text="HH:MM")
+        entry_hsalida.grid(row=fila_actual, column=1, padx=10, pady=8, sticky="w")
+        fila_actual += 1
 
-        entry_vehiculo = ctk.CTkEntry(frame_form, width=300)
-        entry_vehiculo.grid(row=1, column=1, padx=10, pady=8)
+        # Label para mensajes de error de los cálculos
+        lbl_mensaje_calculo = ctk.CTkLabel(frame_form, text="", font=ctk.CTkFont(size=12))
+        lbl_mensaje_calculo.grid(row=fila_actual, column=0, columnspan=2, pady=5)
+        fila_actual += 1
 
-        # ---------------------------------------------------
+        # ---------------- BOTÓN CALCULAR ----------------
+        btn_calcular = ctk.CTkButton(frame_form, text="Calcular", width=120)
+        btn_calcular.grid(row=fila_actual, column=0, columnspan=2, pady=10)
+        fila_actual += 1
 
-        lbl_servicio = ctk.CTkLabel(frame_form, text="servicio:")
-        lbl_servicio.grid(row=2, column=0, padx=10, pady=8, sticky="e")
+        # ---------------- RESULTADOS ----------------
+        lbl_tiempo_text = ctk.CTkLabel(frame_form, text="Tiempo de estancia:", font=ctk.CTkFont(weight="bold"))
+        lbl_tiempo_text.grid(row=fila_actual, column=0, padx=10, pady=5, sticky="e")
+        lbl_tiempo_valor = ctk.CTkLabel(frame_form, text="--")
+        lbl_tiempo_valor.grid(row=fila_actual, column=1, padx=10, pady=5, sticky="w")
+        fila_actual += 1
 
-        entry_servicio = ctk.CTkEntry(frame_form, width=300)
-        entry_servicio.grid(row=2, column=1, padx=10, pady=8)
+        lbl_monto_text = ctk.CTkLabel(frame_form, text="Monto a pagar:", font=ctk.CTkFont(weight="bold"))
+        lbl_monto_text.grid(row=fila_actual, column=0, padx=10, pady=5, sticky="e")
+        lbl_monto_valor = ctk.CTkLabel(frame_form, text="$0.00", text_color="green", font=ctk.CTkFont(size=16, weight="bold"))
+        lbl_monto_valor.grid(row=fila_actual, column=1, padx=10, pady=5, sticky="w")
 
-        # ---------------------------------------------------
-
-        lbl_duracion = ctk.CTkLabel(frame_form, text="duración:")
-        lbl_duracion.grid(row=3, column=0, padx=10, pady=8, sticky="e")
-
-        entry_duracion = ctk.CTkEntry(frame_form, width=300)
-        entry_duracion.grid(row=3, column=1, padx=10, pady=8)
-
-        # ---------------------------------------------------
-
-        lbl_total = ctk.CTkLabel(frame_form, text="Total a pagar:")
-        lbl_total.grid(row=4, column=0, padx=10, pady=8, sticky="e")
-
-        entry_total = ctk.CTkEntry(frame_form, width=300)
-        entry_total.grid(row=4, column=1, padx=10, pady=8)
-
-        # ---------------- BOTONES ----------------
-
-        frame_bottom = ctk.CTkFrame(
-            frame,
-            fg_color="transparent"
-        )
-
-        frame_bottom.grid(
-            row=2,
-            column=0,
-            sticky="se",
-            padx=20,
-            pady=20
-        )
+        # ---------------- BOTONES INFERIORES ----------------
+        frame_bottom = ctk.CTkFrame(frame, fg_color="transparent")
+        frame_bottom.grid(row=2, column=0, sticky="se", padx=20, pady=20)
 
         btn_cancelar = ctk.CTkButton(
             frame_bottom,
-            text="cancelar",
+            text="Cancelar",
             width=120,
             command=estado_inicial
         )
-
         btn_cancelar.pack(side="left", padx=10)
 
+        # Botón bloqueado por defecto
         btn_pagar = ctk.CTkButton(
             frame_bottom,
-            text="pagar",
-            width=120
+            text="Pagar",
+            width=120,
+            state="disabled" 
         )
-
         btn_pagar.pack(side="left", padx=10)
+
+        # =========================================================
+        # LÓGICA MATEMÁTICA Y BD
+        # =========================================================
+        
+        # Esta es la memoria temporal para compartir datos entre los dos botones
+        datos_pago = {
+            "folio_precio": 0,
+            "tiempo_str": "",
+            "monto_total": 0.0,
+            "cliente_id": 0,
+            "cantidad_sumar": 0, # Visitas (1) o Días (X)
+            "f_salida": "",
+            "h_salida": "",
+            "id_usuario": 0
+        }
+
+        def ejecutar_calculo():
+            btn_pagar.configure(state="disabled")
+            lbl_tiempo_valor.configure(text="--")
+            lbl_monto_valor.configure(text="$0.00")
+            
+            f_salida = entry_fsalida.get().strip()
+            h_salida = entry_hsalida.get().strip()
+            id_usuario = entry_usuario.get().strip()
+
+            if not f_salida or not h_salida or not id_usuario:
+                lbl_mensaje_calculo.configure(text="Error: Ingrese Usuario, Fecha y Hora.", text_color="red")
+                return
+
+            if not id_usuario.isdigit():
+                lbl_mensaje_calculo.configure(text="Error: El ID de Usuario debe ser numérico.", text_color="red")
+                return
+
+            try:
+                dt_salida = datetime.strptime(f"{f_salida} {h_salida}", "%Y-%m-%d %H:%M")
+            except ValueError:
+                lbl_mensaje_calculo.configure(text="Error: Formato de Fecha (AAAA-MM-DD) u Hora (HH:MM) inválido.", text_color="red")
+                return
+
+            f_entrada = servicio_encontrado.get_fecha_entrada()
+            h_entrada = servicio_encontrado.get_hora_entrada()
+            dt_entrada = datetime.strptime(f"{f_entrada} {h_entrada}", "%Y-%m-%d %H:%M")
+
+            if dt_salida < dt_entrada:
+                lbl_mensaje_calculo.configure(text="Error: La Fecha/Hora de salida no puede ser menor a la entrada.", text_color="red")
+                return
+
+            db_vehiculo = vehiculos_bd()
+            datos_vehiculo = db_vehiculo.buscar(servicio_encontrado.get_matricula())
+            
+            if not datos_vehiculo:
+                lbl_mensaje_calculo.configure(text="Error: El vehículo no existe en la BD.", text_color="red")
+                return
+            
+            cliente_temp = entidades.Cliente()
+            cliente_temp.set_cliente_id(datos_vehiculo[4])
+            
+            db_cliente = cliente_bd()
+            cliente_obj = db_cliente.Buscar(cliente_temp)
+            
+            if not cliente_obj:
+                lbl_mensaje_calculo.configure(text="Error: No se encontró al propietario.", text_color="red")
+                return
+
+            db_precios = precio_bd()
+            lista_precios = db_precios.obtener_todos()
+            # Guardamos tanto el monto como el folio_precio: { "parking": (30.0, 1) }
+            diccionario_precios = {p.get_tipo(): (float(p.get_monto()), p.get_folio_precio()) for p in lista_precios}
+
+            tipo_servicio = servicio_encontrado.get_tipo_servicio().lower()
+            monto_total = 0.0
+            tiempo_str = ""
+            folio_precio_aplicado = 0
+            cantidad_a_sumar = 0
+
+            if "estacionamiento" in tipo_servicio or "parking" in tipo_servicio:
+                diferencia = dt_salida - dt_entrada
+                segundos_totales = diferencia.total_seconds()
+                
+                horas = int(segundos_totales // 3600)
+                minutos = int((segundos_totales % 3600) // 60)
+
+                if horas == 0 and minutos > 0:
+                    horas_a_cobrar = 1
+                elif minutos >= 46:
+                    horas_a_cobrar = horas + 1
+                else:
+                    horas_a_cobrar = horas
+
+                if horas_a_cobrar == 0: horas_a_cobrar = 1
+                
+                tiempo_str = f"{horas_a_cobrar} hrs"
+                cantidad_a_sumar = 1 # Sumar 1 visita
+
+                tipo_cl_park = str(cliente_obj.get_tipo_cliente_park()).lower()
+                clave_precio = "parking_frecuente" if tipo_cl_park == "frecuente" else "parking"
+                tarifa_base, folio_precio_aplicado = diccionario_precios.get(clave_precio, (30.0, 0))
+
+                if horas_a_cobrar <= 4:
+                    monto_total = horas_a_cobrar * tarifa_base
+                else:
+                    monto_total = (4 * tarifa_base) + ((horas_a_cobrar - 4) * (tarifa_base - 4))
+
+            else:
+                dias_diferencia = (dt_salida.date() - dt_entrada.date()).days
+                dias_a_cobrar = 1 if dias_diferencia == 0 else dias_diferencia
+                
+                tiempo_str = f"{dias_a_cobrar} dias"
+                cantidad_a_sumar = dias_a_cobrar # Sumar los días a tiempo_pension
+
+                tipo_cl_pens = str(cliente_obj.get_tipo_cliente_pens()).lower()
+                clave_precio = "pension_frecuente" if tipo_cl_pens == "frecuente" else "pension"
+                tarifa_base, folio_precio_aplicado = diccionario_precios.get(clave_precio, (200.0, 0))
+                
+                monto_total = dias_a_cobrar * tarifa_base
+
+            # Guardamos todo en la memoria temporal
+            datos_pago["folio_precio"] = folio_precio_aplicado
+            datos_pago["tiempo_str"] = tiempo_str
+            datos_pago["monto_total"] = monto_total
+            datos_pago["cliente_id"] = cliente_obj.get_cliente_id()
+            datos_pago["cantidad_sumar"] = cantidad_a_sumar
+            datos_pago["f_salida"] = f_salida
+            datos_pago["h_salida"] = h_salida
+            datos_pago["id_usuario"] = int(id_usuario)
+
+            lbl_tiempo_valor.configure(text=tiempo_str)
+            lbl_monto_valor.configure(text=f"${monto_total:.2f}")
+            lbl_mensaje_calculo.configure(text="Cálculo realizado. Listo para procesar.", text_color="green")
+            btn_pagar.configure(state="normal")
+
+        def ejecutar_pago():
+            # 1. Actualizar Servicio
+            servicio_actualizado = entidades.Servicio()
+            servicio_actualizado.set_folio_servicio(servicio_encontrado.get_folio_servicio())
+            servicio_actualizado.set_fecha_salida(datos_pago["f_salida"])
+            servicio_actualizado.set_hora_salida(datos_pago["h_salida"])
+            servicio_actualizado.set_folio_precio(datos_pago["folio_precio"])
+            
+            db_serv = servicios_bd()
+            if not db_serv.Actualizar_Salida(servicio_actualizado):
+                MostrarPopUp("Error", "No se pudo actualizar el servicio.")
+                return
+
+            # 2. Actualizar Cliente (Suma visitas o días, el Trigger hace el resto)
+            db_cli = cliente_bd()
+            tipo_serv = servicio_encontrado.get_tipo_servicio().lower()
+            db_cli.Actualizar_Visitas_Dias(datos_pago["cliente_id"], datos_pago["cantidad_sumar"], tipo_serv)
+
+            # 3. Insertar Cobro
+            nuevo_cobro = entidades.Cobro()
+            # Creamos el formato C00001
+            folio_formateado = f"C{servicio_encontrado.get_folio_servicio():05d}"
+            nuevo_cobro.set_folio_cobro(folio_formateado)
+            nuevo_cobro.set_folio_servicio(servicio_encontrado.get_folio_servicio())
+            nuevo_cobro.set_tiempo_estancia(datos_pago["tiempo_str"])
+            nuevo_cobro.set_usuario_id(datos_pago["id_usuario"])
+            nuevo_cobro.set_monto_total(datos_pago["monto_total"])
+
+            db_cobro = cobro_bd()
+            if not db_cobro.Guardar(nuevo_cobro):
+                MostrarPopUp("Error", "El servicio se cerró, pero hubo un error al guardar el ticket de cobro.")
+                return
+
+            # 4. Éxito y limpieza
+            frame.focus_set()  # <--- MAGIA AQUÍ: Le quitamos el foco a las casillas de texto
+            MostrarPopUp("Éxito", f"Cobro registrado correctamente.\nFolio: {folio_formateado}")
+            estado_inicial()
+
+        btn_calcular.configure(command=ejecutar_calculo)
+        btn_pagar.configure(command=ejecutar_pago)
 
 
     # =========================================================

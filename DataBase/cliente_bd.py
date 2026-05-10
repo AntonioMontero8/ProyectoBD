@@ -5,7 +5,7 @@ class cliente_bd:
     def Buscar(self, Cliente):
         self.con = conn.conection().connect()
         self.cursor1 = self.con.cursor()
-        sql = "SELECT cliente_id, nombre, telefono,email, rfc, CP_domicilio_fiscal, regimen_fiscal FROM clientes WHERE cliente_id = %s"
+        sql = "SELECT cliente_id, nombre, telefono,email, rfc, CP_domicilio_fiscal, regimen_fiscal, tipo_cliente_park, tipo_cliente_pens FROM clientes WHERE cliente_id = %s"
         self.cursor1.execute(sql, (Cliente.get_cliente_id(),))
         resultado = self.cursor1.fetchone()
 
@@ -18,6 +18,8 @@ class cliente_bd:
             client.set_rfc(resultado[4])
             client.set_CP_domicilio_fiscal(resultado[5])
             client.set_regimen_fiscal(resultado[6])
+            client.set_tipo_cliente_park(resultado[7])
+            client.set_tipo_cliente_pens(resultado[8])
             self.con.close()
             return client
         else:
@@ -66,4 +68,23 @@ class cliente_bd:
             self.cursor1.close()
             self.con.close()
         
-        
+    def Actualizar_Visitas_Dias(self, cliente_id, cantidad, tipo_servicio):
+        self.con = conn.conection().connect()
+        self.cursor1 = self.con.cursor()
+        try:
+            # Aquí depende del tipo de servicio para saber qué sumar
+            if "estacionamiento" in tipo_servicio or "parking" in tipo_servicio:
+                sql = "UPDATE clientes SET visitas = visitas + %s WHERE cliente_id = %s"
+            else:
+                sql = "UPDATE clientes SET tiempo_pension = tiempo_pension + %s WHERE cliente_id = %s"
+            
+            self.cursor1.execute(sql, (cantidad, cliente_id))
+            self.con.commit()
+            self.con.close()
+            return True
+        except Exception as e:
+            print(f"Error al sumar visitas/días al cliente: {e}")
+            self.con.rollback()
+            self.con.close()
+            return False    
+    

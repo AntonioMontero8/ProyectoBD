@@ -282,3 +282,41 @@ class Estacionamiento:
 
     def set_cantidad_cajones(self, valor):
         self._cantidad_cajones = valor
+
+class Cobro:
+    def __init__(self):        
+        self._folio_cobro = ""
+        self._folio_servicio = 0
+        self._tiempo_estancia = ""
+        self._usuario_id = 0
+        self._monto_total = 0
+
+    def get_folio_cobro(self):
+        return self._folio_cobro
+
+    def set_folio_cobro(self, valor):
+        self._folio_cobro = valor
+
+    def get_folio_servicio(self):
+        return self._folio_servicio
+
+    def set_folio_servicio(self, valor):
+        self._folio_servicio = valor
+
+    def get_tiempo_estancia(self):
+        return self._tiempo_estancia
+
+    def set_tiempo_estancia(self, valor):
+        self._tiempo_estancia = valor
+    
+    def get_usuario_id(self):
+        return self._usuario_id
+
+    def set_usuario_id(self, valor):
+        self._usuario_id = valor
+    
+    def get_monto_total(self):
+        return self._monto_total
+
+    def set_monto_total(self, valor):
+        self._monto_total = valor

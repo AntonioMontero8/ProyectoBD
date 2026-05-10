@@ -68,3 +68,28 @@ class servicios_bd:
                 self.con.rollback() #Cancelamos la transacción en caso de error
                 self.con.close()
                 return False
+            
+    def Actualizar_Salida(self, Servicio):
+        self.con = conn.conection().connect()
+        self.cursor1 = self.con.cursor()
+        sql = """
+            UPDATE servicios 
+            SET fecha_salida = %s, hora_salida = %s, folio_precio = %s 
+            WHERE folio_servicio = %s
+        """
+        valores = (
+            Servicio.get_fecha_salida(),
+            Servicio.get_hora_salida(),
+            Servicio.get_folio_precio(),
+            Servicio.get_folio_servicio()
+        )
+        try:
+            self.cursor1.execute(sql, valores)
+            self.con.commit()
+            self.con.close()
+            return True
+        except Exception as e:
+            print(f"Error al actualizar salida en servicio: {e}")
+            self.con.rollback()
+            self.con.close()
+            return False
