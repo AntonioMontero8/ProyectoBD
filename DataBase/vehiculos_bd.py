@@ -1,7 +1,6 @@
-import mysql.connector
 import utils.conexion_BD as conn
 from utils.entidades import Vehiculo
-import utils.entidades as entidades
+import mysql.connector
 
 class vehiculos_bd:
     def buscar(self, matricula):
@@ -35,6 +34,7 @@ class vehiculos_bd:
             self.cursor1.execute(sql,valores)
             self.con.commit()
             self.con.close() 
+
             return True, "Vehículo guardado correctamente"
         
         except mysql.connector.Error as e:
@@ -45,54 +45,20 @@ class vehiculos_bd:
                 return False, "El cliente_id no existe"
 
             return False, f"Error MariaDB: {e}"
-        finally:
-            if hasattr(self, 'con') and self.con.is_connected():
-                self.con.close()
         
-        
-    def BuscarPorCliente(self, Cliente):
-        self.con = conn.conection().connect()
-        self.cursor1 = self.con.cursor()
-        sql = "SELECT matricula, marca, modelo, color, cliente_id FROM vehiculos WHERE cliente_id = %s"
-        self.cursor1.execute(sql, (Cliente.get_cliente_id(),))
-        resultados = self.cursor1.fetchall()
-        
-        lista_vehiculos = []
-        for res in resultados:
-            v = entidades.Vehiculo()
-            v.set_matricula(res[0])
-            v.set_marca(res[1])
-            v.set_modelo(res[2])
-            v.set_color(res[3])
-            v.set_cliente_id(res[4])
-            lista_vehiculos.append(v)
-            
-        self.con.close()
-        return lista_vehiculos
-
-    def eliminar(self, matricula):
-        try:
-            self.con = conn.conection().connect()
-            self.cursor1 = self.con.cursor()
-            sql = "DELETE FROM vehiculos WHERE matricula = %s"
-            self.cursor1.execute(sql, (matricula,))
-            self.con.commit()
-            return True, "Vehículo eliminado correctamente"
-        except mysql.connector.Error as e:
-            return False, f"Error al eliminar: {e}"
-        finally:
-            if hasattr(self, 'con') and self.con.is_connected():
-                self.con.close()
-
-    def editar(self, vehiculo: Vehiculo):
+    def editar(self,vehiculo:Vehiculo):
         try:
             self.con = conn.conection().connect()
             self.cursor1 = self.con.cursor()
             sql = """
-            UPDATE vehiculos 
-            SET modelo = %s, marca = %s, color = %s, cliente_id = %s 
+            UPDATE vehiculos
+            SET modelo = %s,
+                marca = %s,
+                color = %s,
+                cliente_id = %s
             WHERE matricula = %s
             """
+
             valores = (
                 vehiculo.get_modelo(),
                 vehiculo.get_marca(),
@@ -100,11 +66,44 @@ class vehiculos_bd:
                 vehiculo.get_cliente_id(),
                 vehiculo.get_matricula()
             )
-            self.cursor1.execute(sql, valores)
+            self.cursor1.execute(sql,valores)
             self.con.commit()
+            self.con.close() 
+
+            if self.cursor1.rowcount == 0:
+                return False, "No se encontró el vehículo"
+
             return True, "Vehículo actualizado correctamente"
+            
         except mysql.connector.Error as e:
-            return False, f"Error al actualizar: {e}"
-        finally:
-            if hasattr(self, 'con') and self.con.is_connected():
-                self.con.close()
+            if e.errno == 1452:
+                return False, "El cliente_id no existe"
+
+            return False, f"Error MariaDB: {e}"
+        
+    def eliminar(self, matricula):
+        try:
+            self.con = conn.conection().connect()
+            self.cursor1 = self.con.cursor()
+
+            sql = """
+            DELETE FROM vehiculos
+            WHERE matricula = %s
+            """
+
+            self.cursor1.execute(sql, (matricula,))
+            self.con.commit()
+
+            if self.cursor1.rowcount == 0:
+                return False, "No se encontró el vehículo"
+
+            self.con.close()
+
+            return True, "Vehículo eliminado correctamente"
+
+        except mysql.connector.Error as e:
+
+            if e.errno == 1451:
+                return False, "No se puede eliminar porque el vehículo está relacionado con otros registros"
+
+            return False, f"Error MariaDB: {e}"
