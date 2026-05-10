@@ -3,7 +3,7 @@ from CTkTable import CTkTable
 
 from utils.helpers import limpiar_ventana
 
-def pantalla_servicios(ventana,scaner):
+def pantalla_servicios(ventana, scaner=None):
     limpiar_ventana(ventana)
 
     #region configuracion de vista
@@ -73,7 +73,8 @@ def pantalla_servicios(ventana,scaner):
     )
     entry_id.pack(side="left", padx=5)
 
-    scaner.set_widget_output(entry_id)
+    if scaner is not None:
+        scaner.set_widget_output(entry_id)
     # BOTON BUSCAR
 
     btn_buscar = ctk.CTkButton(
@@ -526,8 +527,8 @@ def pantalla_servicios(ventana,scaner):
 
         lbl_qr = ctk.CTkLabel(
             frame_qr,
-            text="",
-            image= scaner.generar_qr(id_servicio)
+            text="" if scaner is not None else "QR no disponible",
+            image= scaner.generar_qr(id_servicio) if scaner is not None else None
         )
 
         lbl_qr.place(
@@ -610,12 +611,16 @@ def pantalla_servicios(ventana,scaner):
             rely=0.5,
             anchor="center"
         )
-        scaner.set_label_video(lbl_camara)
-        scaner.iniciar_escaneo()
+        if scaner is not None:
+            scaner.set_label_video(lbl_camara)
+            scaner.iniciar_escaneo()
+        else:
+            lbl_camara.configure(text="Escáner no disponible")
 
         # ---------------- BOTON ----------------
         def cancelar():
-            scaner.detener_escaneo()
+            if scaner is not None:
+                scaner.detener_escaneo()
             vista_registrar_servicio()
         
         btn_cancelar = ctk.CTkButton(
@@ -651,7 +656,8 @@ def pantalla_servicios(ventana,scaner):
             vista_pagar_servicio(frame_izquierdo)
             vista_qr(frame_derecho,entry_id.get())
 
-    scaner.do_at_scan = buscar
+    if scaner is not None:
+        scaner.do_at_scan = buscar
 
     btn_buscar.configure(command = buscar)
     #endregion

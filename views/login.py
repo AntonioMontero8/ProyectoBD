@@ -3,12 +3,13 @@ import myCustomTkinter as mctk
 import utils.entidades as entidades
 from DataBase.usuario_bd import usuario_bd
 from utils.helpers import limpiar_ventana
+from views.servicios import pantalla_servicios
 
 # Definición de variables globales para evitar advertencias de alcance (scope)
 id_usuario_logueado = None
 perfil = None
 
-def revisar_credenciales(entry_u, entry_p):
+def revisar_credenciales(entry_u, entry_p, app):
     global id_usuario_logueado, perfil
     nombre_usuario = entry_u.get()
     password = entry_p.get()
@@ -18,13 +19,13 @@ def revisar_credenciales(entry_u, entry_p):
     db = usuario_bd()
     resultado = db.HacerLogin(usuario)
     if resultado:
-        id_usuario_logueado, perfil, nombre_usuario = resultado
-        mostrar_popup(nombre_usuario, True)
+        id_usuario_logueado, perfil = resultado
+        mostrar_popup(nombre_usuario, True, app)
         print(f"Intento de login - ID_Usuario: {id_usuario_logueado}, Perfil: {perfil}, Usuario: {nombre_usuario}, Password: {password}")
     else:
-        mostrar_popup(None, False)
+        mostrar_popup(None, False, app)
     
-def mostrar_popup(nombre_usuario, ingresado):
+def mostrar_popup(nombre_usuario, ingresado, app):
     if ingresado:
         mensaje = f"Sesión iniciada: {nombre_usuario}"
     else:
@@ -40,11 +41,17 @@ def mostrar_popup(nombre_usuario, ingresado):
     etiqueta = ctk.CTkLabel(popup, text=mensaje, font=("Roboto", 16, "bold"))
     etiqueta.pack(pady=(30, 20))
 
+    if ingresado:
+        # Si el login fue exitoso, configurar el menú lateral
+        app.login_exitoso(id_usuario_logueado, perfil)
+        # Cargar la pantalla principal (por ejemplo, servicios)
+        pantalla_servicios(app.contenedor, None)
+
     boton_aceptar = ctk.CTkButton(popup, text="Aceptar", command=popup.destroy)
     boton_aceptar.pack()    
     
 
-def pantalla_login(ventana):
+def pantalla_login(ventana, app):
 
     limpiar_ventana(ventana)
 
@@ -94,5 +101,5 @@ def pantalla_login(ventana):
         frame_form,
         text="Iniciar Sesión",
         width=200,
-        command=lambda: revisar_credenciales(entry_usuario, entry_password)
+        command=lambda: revisar_credenciales(entry_usuario, entry_password, app)
     ).pack(pady=30)
