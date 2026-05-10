@@ -5,7 +5,7 @@ class Usuario:
         self._email = ""
         self._username = ""
         self._password = ""
-        self._perfil = ""
+        self._tipo_usuario = ""
 
     def get_usuario_id(self):
         return self._usuario_id
@@ -37,11 +37,11 @@ class Usuario:
     def set_password(self, valor):
         self._password = valor
 
-    def get_perfil(self):
-        return self._perfil
+    def get_tipo_usuario(self):
+        return self._tipo_usuario
 
-    def set_perfil(self, valor):
-        self._perfil = valor
+    def set_tipo_usuario(self, valor):
+        self._tipo_usuario = valor
         
 class Cliente:
     def __init__(self):        
@@ -263,7 +263,7 @@ class Estacionamiento:
         return self._estacionamiento_id
 
     def set_estacionamiento_id(self, valor):
-        self._estacionamiento_id= valor
+        self._estacionamiento_id = valor
 
     def get_nombre(self):
         return self._nombre
