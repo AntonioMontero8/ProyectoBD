@@ -8,6 +8,8 @@ from DataBase.vehiculos_bd import vehiculos_bd
 from DataBase.estacionamientos_bd import estacionamiento_bd
 from DataBase.cobros_bd import cobro_bd
 from datetime import datetime
+from views.vehiculos import pantalla_vehiculos
+from myCustomTkinter import mostrar_mensaje
 
 from utils.helpers import limpiar_ventana
 
@@ -144,6 +146,7 @@ def pantalla_servicios(ventana,scaner):
         #Vaciamos el contenido de ambos frames para dejarlos como al inicio
         limpiar_ventana(frame_izquierdo)
         limpiar_ventana(frame_derecho)
+
     
     # =========================================================
     # VISTA IZQUIERDA
@@ -353,6 +356,7 @@ def pantalla_servicios(ventana,scaner):
         # ---------------- LÓGICA DE VERIFICACIÓN ----------------
         #En esta función, verificamos si el cliente existe o no, en caso de que si, se buscan los vehiculos que tenga registrado a su nombre
         def verificar_cliente():
+            encontrado = False
             id_ingresado = entry_id_cliente.get()
             
             if not id_ingresado.isdigit():
@@ -366,6 +370,7 @@ def pantalla_servicios(ventana,scaner):
             cliente_encontrado = db_cliente.Buscar(cliente_temp)
 
             if cliente_encontrado:
+                encontrado = True
                 lbl_estado_cliente.configure(text=f"Ok: {cliente_encontrado.get_nombre()}", text_color="green")
                 
                 db_vehiculo = vehiculos_bd()
@@ -382,6 +387,7 @@ def pantalla_servicios(ventana,scaner):
                 lbl_estado_cliente.configure(text="El cliente no existe", text_color="red")
                 option_vehiculo.configure(values=["---"])
                 option_vehiculo.set("---")
+            return encontrado
 
         btn_verificar.configure(command=verificar_cliente)
 
@@ -479,6 +485,35 @@ def pantalla_servicios(ventana,scaner):
         )
         btn_guardar.pack(side="left", padx=10)
 
+        # CALLBACK QUE SE EJECUTA AL GUARDAR VEHÍCULO
+        def callback_guardar_vehiculo(matricula):
+            verificar_cliente()
+            option_vehiculo.set(matricula)
+
+        # ABRIR POPUP DE VEHÍCULOS
+        def abrir_popup_vehiculo(ventana_padre):
+
+            cliente_id = entry_id_cliente.get()
+
+            if not verificar_cliente():
+                mostrar_mensaje("", "Primero debe seleccionar\nun cliente valido")
+                return
+
+            popup = ctk.CTkToplevel(ventana_padre)
+
+            popup.title("Nuevo vehículo")
+            popup.geometry("700x500")
+
+            popup.transient(ventana_padre)
+            popup.grab_set()
+
+            pantalla_vehiculos(
+                ventana=popup,
+                dueno_id=cliente_id,
+                callback_guardar= callback_guardar_vehiculo
+            )
+
+        btn_nuevo_vehiculo.configure(command=lambda :abrir_popup_vehiculo(ventana))
     # =========================================================
     # VISTA IZQUIERDA
     # PAGAR SERVICIO

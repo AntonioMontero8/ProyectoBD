@@ -164,7 +164,8 @@ def pantalla_vehiculos(ventana, dueno_id= None, callback_guardar=None):
 
         btn_guardar.configure(state="disabled")
 
-    btn_buscar.configure(command=buscar)
+    if not callback_guardar:
+        btn_buscar.configure(command=buscar)
 
     def eliminar():
         matricula = entries["matricula:"].get()
@@ -174,7 +175,8 @@ def pantalla_vehiculos(ventana, dueno_id= None, callback_guardar=None):
             btn_eliminar.configure(state="disabled")
             cancelar()
 
-    btn_eliminar.configure(command=eliminar)
+    if not callback_guardar:
+        btn_eliminar.configure(command=eliminar)
 
     def editar():
         global modo
@@ -189,7 +191,8 @@ def pantalla_vehiculos(ventana, dueno_id= None, callback_guardar=None):
 
         modo = "editar"
     
-    btn_editar.configure(command = editar)
+    if not callback_guardar:
+        btn_editar.configure(command = editar)
 
     def nuevo():
         global modo
@@ -202,7 +205,8 @@ def pantalla_vehiculos(ventana, dueno_id= None, callback_guardar=None):
 
         modo = "nuevo"
 
-    btn_nuevo.configure(command=nuevo)
+    if not callback_guardar:
+        btn_nuevo.configure(command=nuevo)
 
     # Lógica para cancelar
     def cancelar():
@@ -238,11 +242,11 @@ def pantalla_vehiculos(ventana, dueno_id= None, callback_guardar=None):
                 mostrar_mensaje("","Es nesesario llenar\ntodos los campos")
                 return
 
-        patron = r"^[A-Z]{2,2}[0-9]{4,4}$"
-        if re.match(patron, texto) is None:
+        patron = r"^[A-Z]{2}\d{4}$"
+        if not re.match(patron, entries["matricula:"].get()) :
             mostrar_mensaje("","la matricula debe tener\nel formato 'AA0000'")
             return
-
+        print("M BIEN")
         veh = Vehiculo()
         veh.set_matricula(entries["matricula:"].get())
         veh.set_modelo(entries["modelo:"].get())
@@ -257,7 +261,7 @@ def pantalla_vehiculos(ventana, dueno_id= None, callback_guardar=None):
 
             if res[0]:
                 if callback_guardar and res:
-                    callback_guardar(veh.set_matricula)
+                    callback_guardar(veh.get_matricula())
                     ventana.destroy()
                 else:
                     btn_guardar.configure(state="disabled")
@@ -280,7 +284,10 @@ def pantalla_vehiculos(ventana, dueno_id= None, callback_guardar=None):
     btn_guardar = ctk.CTkButton(frame_bottom, text="guardar", width=120, command=guardar)
     btn_guardar.pack(side="left", padx=10)
 
-    if not callback_guardar:
+    
+    if callback_guardar:
+        modo = "nuevo"
+    else:
         cancelar()
 
 if __name__ == "__main__":
