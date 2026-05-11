@@ -286,4 +286,4 @@ def pantalla_vehiculos(ventana, dueno_id= None, callback_guardar=None):
 if __name__ == "__main__":
     app = ctk.CTk()
     pantalla_vehiculos(app)
-    app.mainloop()
+    app.mainloop() 

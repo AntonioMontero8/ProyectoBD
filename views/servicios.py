@@ -495,7 +495,7 @@ def pantalla_servicios(ventana,scaner):
         # ---------------- TITULO ----------------
 
         titulo = ctk.CTkLabel(
-            frame,
+            frame, 
             text="ID del servicio:",
             font=ctk.CTkFont(size=28)
         )
