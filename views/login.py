@@ -5,7 +5,7 @@ from DataBase.usuario_bd import usuario_bd
 from utils.helpers import limpiar_ventana
 from views.servicios import pantalla_servicios
 
-# Definición de variables globales para evitar advertencias de alcance (scope)
+# Definición de variables globales
 id_usuario_logueado = None
 perfil = None
 
@@ -13,15 +13,20 @@ def revisar_credenciales(entry_u, entry_p, app):
     global id_usuario_logueado, perfil
     nombre_usuario = entry_u.get()
     password = entry_p.get()
+    
     usuario = entidades.Usuario()
     usuario.set_username(nombre_usuario)
     usuario.set_password(password)
+    
     db = usuario_bd()
     resultado = db.HacerLogin(usuario)
+    
+    # Truco UI: Quitamos el foco a los inputs para evitar el TclError al destruirlos
+    app.focus_set() 
+    
     if resultado:
         id_usuario_logueado, perfil = resultado
         mostrar_popup(nombre_usuario, True, app)
-        print(f"Intento de login - ID_Usuario: {id_usuario_logueado}, Perfil: {perfil}, Usuario: {nombre_usuario}, Password: {password}")
     else:
         mostrar_popup(None, False, app)
     
@@ -30,26 +35,29 @@ def mostrar_popup(nombre_usuario, ingresado, app):
         mensaje = f"Sesión iniciada: {nombre_usuario}"
     else:
         mensaje = "No se pudo autenticar este usuario"
+        
     popup = ctk.CTkToplevel()
-    popup.title("Inicio de Sesión")
-
+    popup.title("Estado de Login")
     popup.geometry("350x150")
-
-    popup.grab_set() #No puede interactuar con el fondo  hasta cerrar el pop-up
+    popup.grab_set()
     popup.attributes("-topmost", True)
-
-    etiqueta = ctk.CTkLabel(popup, text=mensaje, font=("Roboto", 16, "bold"))
-    etiqueta.pack(pady=(30, 20))
-
-    if ingresado:
-        # Si el login fue exitoso, configurar el menú lateral
-        app.login_exitoso(id_usuario_logueado, perfil)
-        # Cargar la pantalla principal (por ejemplo, servicios)
-        pantalla_servicios(app.contenedor, None)
-
-    boton_aceptar = ctk.CTkButton(popup, text="Aceptar", command=popup.destroy)
-    boton_aceptar.pack()    
     
+    ctk.CTkLabel(popup, text=mensaje, font=("Roboto", 16, "bold")).pack(pady=(30, 20))
+    
+    def cerrar_y_continuar(event=None):
+        popup.destroy()
+        if ingresado:
+            app.login_exitoso(id_usuario_logueado, perfil)
+            # =========================================================
+            # CORRECCIÓN VITAL: Pasamos app.scaner en lugar de None
+            # =========================================================
+            pantalla_servicios(app.contenedor, app.scaner)
+
+    boton_aceptar = ctk.CTkButton(popup, text="Aceptar", command=cerrar_y_continuar)
+    boton_aceptar.pack()
+    
+    # Permitir que el PopUp se cierre con Enter
+    popup.bind("<Return>", cerrar_y_continuar)
 
 def pantalla_login(ventana, app):
 
@@ -64,7 +72,7 @@ def pantalla_login(ventana, app):
     frame_form = ctk.CTkFrame(
         ventana,
         width=400,
-        height=300
+        height=320
     )
 
     frame_form.pack(pady=20, padx=60)
@@ -76,7 +84,6 @@ def pantalla_login(ventana, app):
         font=("Arial", 14)
     ).pack(pady=(30, 5))
 
-    # Asignamos el Entry a una variable
     entry_usuario = ctk.CTkEntry(
         frame_form,
         placeholder_text="Admin / Cobrador",
@@ -88,7 +95,7 @@ def pantalla_login(ventana, app):
         frame_form,
         text="Contraseña:",
         font=("Arial", 14)
-    ).pack(pady=(15, 5))
+    ).pack(pady=(20, 5))
 
     entry_password = mctk.PasswordEntry(
         frame_form,
@@ -97,9 +104,18 @@ def pantalla_login(ventana, app):
     )
     entry_password.pack(pady=5)
 
-    ctk.CTkButton(
+    def ejecutar_login(event=None):
+        revisar_credenciales(entry_usuario, entry_password, app)
+        return 'break' # Detiene la propagación del evento en Tkinter para evitar el TclError
+
+    btn_login = ctk.CTkButton(
         frame_form,
-        text="Iniciar Sesión",
+        text="Ingresar",
         width=200,
-        command=lambda: revisar_credenciales(entry_usuario, entry_password, app)
-    ).pack(pady=30)
+        command=ejecutar_login
+    )
+    btn_login.pack(pady=(30, 10))
+
+    # Enlazar la tecla Enter a las cajas de texto
+    entry_usuario.bind("<Return>", ejecutar_login)
+    entry_password.entry.bind("<Return>", ejecutar_login)
