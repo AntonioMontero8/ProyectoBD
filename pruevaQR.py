@@ -24,9 +24,9 @@ class QRscaner():
         widget.configure(textvariable=self.outputVar)
 
     # =========================
-    # GENERAR QR
+    # GENERAR QR (VERSIÓN OPTIMIZADA EN MEMORIA)
     # =========================
-    def generar_qr(self, texto, archivo="qr_generado.png"):
+    def generar_qr(self, texto):
 
         qr = qrcode.QRCode(
             version=1,
@@ -39,16 +39,10 @@ class QRscaner():
 
         img = qr.make_image(fill_color="black", back_color="white")
 
-        # Guardar imagen
-        img.save(archivo)
+        # MAGIA: Extraemos la imagen directamente a PIL sin guardarla en disco
+        img_pil = img.get_image()
 
-        # Mostrar en pantalla
-        img_pil = Image.open(archivo)
-
-        ctk_img = ctk.CTkImage(
-            light_image=img_pil,
-            size=(300, 300)
-        )
+        ctk_img = ctk.CTkImage(light_image=img_pil, dark_image=img_pil, size=(250, 250))
 
         return ctk_img
 

@@ -50,7 +50,6 @@ class DatePicker(ctk.CTkFrame):
         self.popup.overrideredirect(True)
         self.popup.attributes("-topmost", True)
 
-        # 🎨 Colores del tema
         fg = ctk.ThemeManager.theme["CTkFrame"]["fg_color"]
         border = ctk.ThemeManager.theme["CTkFrame"]["border_color"]
         text = ctk.ThemeManager.theme["CTkLabel"]["text_color"]
@@ -63,7 +62,6 @@ class DatePicker(ctk.CTkFrame):
 
         self.popup.geometry(f"{width}x{height}+{x}+{y}")
 
-        # 🔹 Marco con borde (simula dropdown moderno)
         outer = ctk.CTkFrame(
             self.popup,
             fg_color=fg,
@@ -79,12 +77,10 @@ class DatePicker(ctk.CTkFrame):
         self.popup.after(10, self.popup.focus_force)
         self.popup.bind("<FocusOut>", lambda e: self.ocultar_calendario())
 
-        # 📅 Variables
         hoy = datetime.today()
         self.mes_var = tk.StringVar(value=self.meses[hoy.month - 1])
         self.anio_var = tk.StringVar(value=str(hoy.year))
 
-        # 🔹 Barra superior
         top = ctk.CTkFrame(container, fg_color="transparent")
         top.pack(fill="x", pady=(4, 2), padx=4)
 
@@ -106,7 +102,6 @@ class DatePicker(ctk.CTkFrame):
         anio_entry.pack(side="right")
         anio_entry.bind("<Return>", lambda e: self.actualizar_calendario())
 
-        # 🔹 Colores adaptados al tema
         bg_color = fg[1] if isinstance(fg, tuple) else fg
         text_color = text[1] if isinstance(text, tuple) else text
 
@@ -116,27 +111,20 @@ class DatePicker(ctk.CTkFrame):
             date_pattern=self.placeholder,
             locale="es_ES",
             font=("Arial", 9),
-
             background=bg_color,
             foreground=text_color,
-
             headersbackground=bg_color,
             headersforeground=text_color,
-
             normalbackground=bg_color,
             normalforeground=text_color,
-
             weekendbackground=bg_color,
             weekendforeground=text_color,
-
             selectbackground=ctk.ThemeManager.theme["CTkButton"]["fg_color"][1],
             selectforeground="white",
-
             bordercolor=border
         )
 
         self.cal.pack(fill="both", expand=True, padx=6, pady=6)
-
         self.cal.bind("<<CalendarSelected>>", self.seleccionar_fecha)
 
     def _click_fuera(self, event):
@@ -185,9 +173,8 @@ class PasswordEntry(ctk.CTkFrame):
 
         super().__init__(master, fg_color="transparent", width=width, **kwargs)
 
-        self.columnconfigure(0, weight=1)  # <-- Hace que la columna se expanda
+        self.columnconfigure(0, weight=1)
 
-        # ---- Campo de contraseña ----
         self.entry = ctk.CTkEntry(
             self,
             placeholder_text=placeholder_text,
@@ -196,7 +183,6 @@ class PasswordEntry(ctk.CTkFrame):
         )
         self.entry.grid(row=0, column=0, columnspan = 2,sticky="ew")
 
-        # ---- Cargar imágenes ----
         self.image_closed = ctk.CTkImage(
             light_image=Image.open(eye_closed),
             dark_image=Image.open(eye_closed),
@@ -211,7 +197,6 @@ class PasswordEntry(ctk.CTkFrame):
 
         self.visible = False
 
-        # ---- Botón ----
         self.toggle_btn = ctk.CTkButton(
             self,
             text="",
@@ -223,7 +208,7 @@ class PasswordEntry(ctk.CTkFrame):
             command=self.toggle_password,
             corner_radius=0
         )
-        self.toggle_btn.grid(row=0, column=1, padx=5)  # <-- Siempre pegado a la derecha
+        self.toggle_btn.grid(row=0, column=1, padx=5)
 
     def toggle_password(self):
         if self.visible:
@@ -245,12 +230,9 @@ class PasswordEntry(ctk.CTkFrame):
     def clear(self):
         self.entry.delete(0, "end")
 
-import customtkinter as ctk
 
 def mostrar_mensaje(titulo, mensaje):
-
     ventana_msg = ctk.CTkToplevel()
-
     ventana_msg.title(titulo)
     ventana_msg.geometry("300x150")
     ventana_msg.grab_set()
@@ -260,7 +242,6 @@ def mostrar_mensaje(titulo, mensaje):
         text=mensaje,
         wraplength=250
     )
-
     lbl.pack(pady=20)
 
     btn = ctk.CTkButton(
@@ -268,18 +249,15 @@ def mostrar_mensaje(titulo, mensaje):
         text="Aceptar",
         command=ventana_msg.destroy
     )
-
     btn.pack(pady=10)
 
-    # Enter activa aceptar
     ventana_msg.bind("<Return>", lambda event: ventana_msg.destroy())
 
-def confirmar_mensaje(titulo, mensaje):
 
+def confirmar_mensaje(titulo, mensaje):
     resultado = {"respuesta": False}
 
     ventana_msg = ctk.CTkToplevel()
-
     ventana_msg.title(titulo)
     ventana_msg.geometry("300x150")
     ventana_msg.grab_set()
@@ -289,7 +267,6 @@ def confirmar_mensaje(titulo, mensaje):
         text=mensaje,
         wraplength=250
     )
-
     lbl.pack(pady=20)
 
     frame_botones = ctk.CTkFrame(ventana_msg, fg_color="transparent")
@@ -309,7 +286,6 @@ def confirmar_mensaje(titulo, mensaje):
         command=cancelar,
         width=80
     )
-
     btn_no.pack(side="left", padx=10)
 
     btn_si = ctk.CTkButton(
@@ -318,11 +294,10 @@ def confirmar_mensaje(titulo, mensaje):
         command=confirmar,
         width=80
     )
-
     btn_si.pack(side="left", padx=10)
 
-    # Enter activa aceptar
-    ventana_msg.bind("<Return>", lambda event: confirmar)
+    # CORRECCIÓN: Agregar los paréntesis () a confirmar
+    ventana_msg.bind("<Return>", lambda event: confirmar())
 
     ventana_msg.wait_window()
 

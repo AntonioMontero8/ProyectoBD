@@ -5,14 +5,13 @@ from DataBase.servicios_bd import servicios_bd
 from DataBase.precios_bd import precio_bd
 from DataBase.cliente_bd import cliente_bd
 from DataBase.vehiculos_bd import vehiculos_bd
-from DataBase.estacionamientos_bd import estacionamiento_bd
+from DataBase.estacionamiento_bd import estacionamiento_bd
 from DataBase.cobros_bd import cobro_bd
 from datetime import datetime
 from views.vehiculos import pantalla_vehiculos
 from myCustomTkinter import mostrar_mensaje
 
 from utils.helpers import limpiar_ventana
-
 def MostrarPopUp(titulo, mensaje):
     popup = ctk.CTkToplevel()
     popup.title(titulo)
@@ -157,11 +156,8 @@ def pantalla_servicios(ventana,scaner):
         limpiar_ventana(frame)
 
         # ---------------- GRID ----------------
-        # Fila 0 (Título): No se estira
         frame.grid_rowconfigure(0, weight=0)
-        # Fila 1 (Datos): SE ESTIRA (weight=1) para ocupar el espacio central
         frame.grid_rowconfigure(1, weight=1)
-        # Fila 2 (Botones): No se estira, se queda abajo
         frame.grid_rowconfigure(2, weight=0)
         frame.grid_columnconfigure(0, weight=1)
 
@@ -171,11 +167,9 @@ def pantalla_servicios(ventana,scaner):
             text="Detalles del Servicio",
             font=ctk.CTkFont(size=26, weight="bold")
         )
-        # Cambiamos sticky a "n" para que siempre esté arriba
         titulo.grid(row=0, column=0, pady=(20, 10), sticky="n")
 
         # ---------------- DATOS DE LA BD ----------------
-        # Cambiamos CTkFrame por CTkScrollableFrame para que si crece, ruede.
         frame_datos = ctk.CTkScrollableFrame(frame, width=400, height=350) 
         frame_datos.grid(row=1, column=0, padx=20, pady=10, sticky="nsew")
         frame_datos.grid_columnconfigure(1, weight=1)
@@ -209,8 +203,6 @@ def pantalla_servicios(ventana,scaner):
             cobro_encontrado = db_cobro.BuscarCobro(cobro_temp)
             
             if cobro_encontrado:
-                # Quitamos toda la lógica de unidad_tiempo y concatenación
-                # porque tu base de datos ya trae la unidad incluida
                 tiempo_estancia_db = cobro_encontrado.get_tiempo_estancia()
                 
                 datos_mostrar.append(("Tiempo de estancia:", tiempo_estancia_db))
@@ -229,7 +221,6 @@ def pantalla_servicios(ventana,scaner):
             lbl_campo = ctk.CTkLabel(frame_datos, text=label_text, font=ctk.CTkFont(weight="bold"))
             lbl_campo.grid(row=i, column=0, padx=10, pady=5, sticky="e")
             
-            # Si el estado es "Sin pagar", podemos ponerle color rojo, y verde si es "Pagado"
             color_texto = ["default_theme"]
             if label_text == "Estado:":
                 color_texto = "red" if valor == "Sin pagar" else "green"
@@ -251,14 +242,12 @@ def pantalla_servicios(ventana,scaner):
         )
         btn_cancelar.pack(side="left", padx=10)
 
-        # Aquí definimos el estado del boton para verificar si el servicio ya se pago o no
         estado_boton = "disabled" if servicio_pagado else "normal"
 
         btn_proceder_pago = ctk.CTkButton(
             frame_bottom,
             text="Proceder a pago",
             width=120,
-            # DEBES CAMBIAR ESTA LÍNEA ASÍ:
             command=lambda: vista_pagar_servicio(frame, servicio_encontrado),
             state=estado_boton
         )
@@ -564,45 +553,44 @@ def pantalla_servicios(ventana,scaner):
 
         fila_actual = len(datos_fijos)
 
-        # Separador visual
         separador = ctk.CTkFrame(frame_form, height=2, fg_color="gray")
         separador.grid(row=fila_actual, column=0, columnspan=2, sticky="we", padx=10, pady=15)
         fila_actual += 1
 
         # ---------------- ENTRADAS DEL OPERADOR ----------------
         
-        # 1. Usuario
-        lbl_usuario = ctk.CTkLabel(frame_form, text="ID Usuario:", font=ctk.CTkFont(weight="bold"))
+        # MAGIA DE TKINTER: Le pedimos el dato a la ventana raíz (App) sin importar archivos
+        ventana_principal = frame.winfo_toplevel()
+        id_usuario_actual = ventana_principal.usuario_logueado
+
+        lbl_usuario = ctk.CTkLabel(frame_form, text="Atendido por (ID):", font=ctk.CTkFont(weight="bold"))
         lbl_usuario.grid(row=fila_actual, column=0, padx=10, pady=8, sticky="e")
-        entry_usuario = ctk.CTkEntry(frame_form, width=200)
-        entry_usuario.grid(row=fila_actual, column=1, padx=10, pady=8, sticky="w")
+        
+        # Mostramos el ID como un texto verde y fijo
+        lbl_usuario_val = ctk.CTkLabel(frame_form, text=str(id_usuario_actual), text_color="#28a745", font=ctk.CTkFont(weight="bold"))
+        lbl_usuario_val.grid(row=fila_actual, column=1, padx=10, pady=8, sticky="w")
         fila_actual += 1
 
-        # 2. Fecha Salida
         lbl_fsalida = ctk.CTkLabel(frame_form, text="Fecha de salida:", font=ctk.CTkFont(weight="bold"))
         lbl_fsalida.grid(row=fila_actual, column=0, padx=10, pady=8, sticky="e")
         entry_fsalida = ctk.CTkEntry(frame_form, width=200, placeholder_text="AAAA-MM-DD")
         entry_fsalida.grid(row=fila_actual, column=1, padx=10, pady=8, sticky="w")
         fila_actual += 1
 
-        # 3. Hora Salida
         lbl_hsalida = ctk.CTkLabel(frame_form, text="Hora de salida:", font=ctk.CTkFont(weight="bold"))
         lbl_hsalida.grid(row=fila_actual, column=0, padx=10, pady=8, sticky="e")
         entry_hsalida = ctk.CTkEntry(frame_form, width=200, placeholder_text="HH:MM")
         entry_hsalida.grid(row=fila_actual, column=1, padx=10, pady=8, sticky="w")
         fila_actual += 1
 
-        # Label para mensajes de error de los cálculos
         lbl_mensaje_calculo = ctk.CTkLabel(frame_form, text="", font=ctk.CTkFont(size=12))
         lbl_mensaje_calculo.grid(row=fila_actual, column=0, columnspan=2, pady=5)
         fila_actual += 1
 
-        # ---------------- BOTÓN CALCULAR ----------------
         btn_calcular = ctk.CTkButton(frame_form, text="Calcular", width=120)
         btn_calcular.grid(row=fila_actual, column=0, columnspan=2, pady=10)
         fila_actual += 1
 
-        # ---------------- RESULTADOS ----------------
         lbl_tiempo_text = ctk.CTkLabel(frame_form, text="Tiempo de estancia:", font=ctk.CTkFont(weight="bold"))
         lbl_tiempo_text.grid(row=fila_actual, column=0, padx=10, pady=5, sticky="e")
         lbl_tiempo_valor = ctk.CTkLabel(frame_form, text="--")
@@ -626,7 +614,6 @@ def pantalla_servicios(ventana,scaner):
         )
         btn_cancelar.pack(side="left", padx=10)
 
-        # Botón bloqueado por defecto
         btn_pagar = ctk.CTkButton(
             frame_bottom,
             text="Pagar",
@@ -639,13 +626,12 @@ def pantalla_servicios(ventana,scaner):
         # LÓGICA MATEMÁTICA Y BD
         # =========================================================
         
-        # Esta es la memoria temporal para compartir datos entre los dos botones
         datos_pago = {
             "folio_precio": 0,
             "tiempo_str": "",
             "monto_total": 0.0,
             "cliente_id": 0,
-            "cantidad_sumar": 0, # Visitas (1) o Días (X)
+            "cantidad_sumar": 0,
             "f_salida": "",
             "h_salida": "",
             "id_usuario": 0
@@ -658,14 +644,9 @@ def pantalla_servicios(ventana,scaner):
             
             f_salida = entry_fsalida.get().strip()
             h_salida = entry_hsalida.get().strip()
-            id_usuario = entry_usuario.get().strip()
 
-            if not f_salida or not h_salida or not id_usuario:
-                lbl_mensaje_calculo.configure(text="Error: Ingrese Usuario, Fecha y Hora.", text_color="red")
-                return
-
-            if not id_usuario.isdigit():
-                lbl_mensaje_calculo.configure(text="Error: El ID de Usuario debe ser numérico.", text_color="red")
+            if not f_salida or not h_salida:
+                lbl_mensaje_calculo.configure(text="Error: Ingrese Fecha y Hora de salida.", text_color="red")
                 return
 
             try:
@@ -701,7 +682,6 @@ def pantalla_servicios(ventana,scaner):
 
             db_precios = precio_bd()
             lista_precios = db_precios.obtener_todos()
-            # Guardamos tanto el monto como el folio_precio: { "parking": (30.0, 1) }
             diccionario_precios = {p.get_tipo(): (float(p.get_monto()), p.get_folio_precio()) for p in lista_precios}
 
             tipo_servicio = servicio_encontrado.get_tipo_servicio().lower()
@@ -727,7 +707,7 @@ def pantalla_servicios(ventana,scaner):
                 if horas_a_cobrar == 0: horas_a_cobrar = 1
                 
                 tiempo_str = f"{horas_a_cobrar} hrs"
-                cantidad_a_sumar = 1 # Sumar 1 visita
+                cantidad_a_sumar = 1 
 
                 tipo_cl_park = str(cliente_obj.get_tipo_cliente_park()).lower()
                 clave_precio = "parking_frecuente" if tipo_cl_park == "frecuente" else "parking"
@@ -743,7 +723,7 @@ def pantalla_servicios(ventana,scaner):
                 dias_a_cobrar = 1 if dias_diferencia == 0 else dias_diferencia
                 
                 tiempo_str = f"{dias_a_cobrar} dias"
-                cantidad_a_sumar = dias_a_cobrar # Sumar los días a tiempo_pension
+                cantidad_a_sumar = dias_a_cobrar 
 
                 tipo_cl_pens = str(cliente_obj.get_tipo_cliente_pens()).lower()
                 clave_precio = "pension_frecuente" if tipo_cl_pens == "frecuente" else "pension"
@@ -751,7 +731,6 @@ def pantalla_servicios(ventana,scaner):
                 
                 monto_total = dias_a_cobrar * tarifa_base
 
-            # Guardamos todo en la memoria temporal
             datos_pago["folio_precio"] = folio_precio_aplicado
             datos_pago["tiempo_str"] = tiempo_str
             datos_pago["monto_total"] = monto_total
@@ -759,7 +738,8 @@ def pantalla_servicios(ventana,scaner):
             datos_pago["cantidad_sumar"] = cantidad_a_sumar
             datos_pago["f_salida"] = f_salida
             datos_pago["h_salida"] = h_salida
-            datos_pago["id_usuario"] = int(id_usuario)
+            # AQUÍ GUARDAMOS EL ID DE LA SESIÓN PARA MANDARLO A LA BD
+            datos_pago["id_usuario"] = id_usuario_actual
 
             lbl_tiempo_valor.configure(text=tiempo_str)
             lbl_monto_valor.configure(text=f"${monto_total:.2f}")
@@ -767,7 +747,6 @@ def pantalla_servicios(ventana,scaner):
             btn_pagar.configure(state="normal")
 
         def ejecutar_pago():
-            # 1. Actualizar Servicio
             servicio_actualizado = entidades.Servicio()
             servicio_actualizado.set_folio_servicio(servicio_encontrado.get_folio_servicio())
             servicio_actualizado.set_fecha_salida(datos_pago["f_salida"])
@@ -779,14 +758,11 @@ def pantalla_servicios(ventana,scaner):
                 MostrarPopUp("Error", "No se pudo actualizar el servicio.")
                 return
 
-            # 2. Actualizar Cliente (Suma visitas o días, el Trigger hace el resto)
             db_cli = cliente_bd()
             tipo_serv = servicio_encontrado.get_tipo_servicio().lower()
             db_cli.Actualizar_Visitas_Dias(datos_pago["cliente_id"], datos_pago["cantidad_sumar"], tipo_serv)
 
-            # 3. Insertar Cobro
             nuevo_cobro = entidades.Cobro()
-            # Creamos el formato C00001
             folio_formateado = f"C{servicio_encontrado.get_folio_servicio():05d}"
             nuevo_cobro.set_folio_cobro(folio_formateado)
             nuevo_cobro.set_folio_servicio(servicio_encontrado.get_folio_servicio())
@@ -799,8 +775,7 @@ def pantalla_servicios(ventana,scaner):
                 MostrarPopUp("Error", "El servicio se cerró, pero hubo un error al guardar el ticket de cobro.")
                 return
 
-            # 4. Éxito y limpieza
-            frame.focus_set()  # <--- MAGIA AQUÍ: Le quitamos el foco a las casillas de texto
+            frame.focus_set()  
             MostrarPopUp("Éxito", f"Cobro registrado correctamente.\nFolio: {folio_formateado}")
             estado_inicial()
 
@@ -817,10 +792,9 @@ def pantalla_servicios(ventana,scaner):
         limpiar_ventana(frame)
 
         # ---------------- GRID ----------------
-        frame.grid_rowconfigure(0, weight=0) # Título
-        frame.grid_rowconfigure(1, weight=1) # Tabla (ocupa el centro)
-        frame.grid_rowconfigure(2, weight=0) # Texto de condiciones (abajo)
-
+        frame.grid_rowconfigure(0, weight=0) 
+        frame.grid_rowconfigure(1, weight=1) 
+        frame.grid_rowconfigure(2, weight=0) 
         frame.grid_columnconfigure(0, weight=1)
 
         # ---------------- TITULO ----------------
@@ -829,35 +803,28 @@ def pantalla_servicios(ventana,scaner):
             text="Precios",
             font=ctk.CTkFont(size=28, weight="bold")
         )
-
         titulo.grid(row=0, column=0, pady=(20, 10), sticky="n")
 
         # ---------------- OBTENER DATOS BD ----------------
         bd_precio = precio_bd()
         lista_precios = bd_precio.obtener_todos()
 
-        # ---------------- TABLA (3 Columnas) ----------------
-        # Cabecera
+        # ---------------- TABLA ----------------
         datos = [
             ["Servicio", "Precio", "Precio con\ndescuento"]
         ]
 
-        # Llenado dinámico
         if lista_precios:
-            # Convertimos la lista en un diccionario para buscar por el nombre exacto de la BD
-            # Almacenamos el monto asegurándonos de que sea entero
             diccionario_precios = {precio.get_tipo(): int(precio.get_monto()) for precio in lista_precios}
 
-            # 1. Lógica para Estacionamiento Normal (parking)
             if "parking" in diccionario_precios:
                 monto = diccionario_precios["parking"]
                 datos.append([
                     "Estacionamiento",
-                    f"${monto:.2f}",       # El :.2f lo muestra como float (ej. $30.00)
-                    f"${monto - 4:.2f}"    # Restamos 4 como descuento después de 5 horas
+                    f"${monto:.2f}",       
+                    f"${monto - 4:.2f}"    
                 ])
 
-            # 2. Lógica para Estacionamiento Frecuente (parking_frecuente)
             if "parking_frecuente" in diccionario_precios:
                 monto = diccionario_precios["parking_frecuente"]
                 datos.append([
@@ -866,13 +833,9 @@ def pantalla_servicios(ventana,scaner):
                     f"${monto - 4:.2f}"
                 ])
 
-            # 3. Lógica para Pensión (pension) y su descuento (pension_frecuente)
             if "pension" in diccionario_precios:
                 monto_pension = diccionario_precios["pension"]
-                
-                # Buscamos 'pension_frecuente' para el descuento. Si no existe, repite el precio normal.
                 monto_descuento = diccionario_precios.get("pension_frecuente", monto_pension)
-                
                 datos.append([
                     "Pensión",
                     f"${monto_pension:.2f}",
@@ -886,10 +849,9 @@ def pantalla_servicios(ventana,scaner):
             values=datos,
             width=130 
         )
-
         tabla.grid(row=1, column=0, padx=10, pady=10, sticky="n")
 
-        # ---------------- CONDICIONES (Texto Inferior) ----------------
+        # ---------------- CONDICIONES ----------------
         texto_condiciones = (
             "Condiciones de descuento:\n\n"
             "• Estacionamiento: Después de 5 horas.\n"
@@ -902,7 +864,6 @@ def pantalla_servicios(ventana,scaner):
             font=ctk.CTkFont(size=14),
             justify="left"
         )
-
         lbl_condiciones.grid(row=2, column=0, padx=20, pady=(0, 20), sticky="w")
 
 
@@ -915,21 +876,17 @@ def pantalla_servicios(ventana,scaner):
         limpiar_ventana(frame)
 
         # ---------------- GRID ----------------
-
         frame.grid_rowconfigure(0, weight=1)
         frame.grid_rowconfigure(1, weight=3)
         frame.grid_rowconfigure(2, weight=1)
-
         frame.grid_columnconfigure(0, weight=1)
 
         # ---------------- TITULO ----------------
-
         titulo = ctk.CTkLabel(
             frame,
             text="ID del servicio:",
             font=ctk.CTkFont(size=28)
         )
-
         titulo.grid(
             row=0,
             column=0,
@@ -938,27 +895,30 @@ def pantalla_servicios(ventana,scaner):
         )
 
         # ---------------- QR ----------------
-
         frame_qr = ctk.CTkFrame(
             frame,
             width=300,
             height=300,
         )
-
         frame_qr.grid(
             row=1,
             column=0,
             padx=20,
             pady=20
         )
-
         frame_qr.grid_propagate(False)
 
+        # Generar imagen y asignar a label manteniendo referencia
+        imagen_qr = scaner.generar_qr(id_servicio) if scaner is not None else None
+        
         lbl_qr = ctk.CTkLabel(
             frame_qr,
             text="" if scaner is not None else "QR no disponible",
-            image= scaner.generar_qr(id_servicio) if scaner is not None else None
+            image=imagen_qr
         )
+        
+        if imagen_qr:
+            lbl_qr.image = imagen_qr  # Asegura que el recolector de basura no borre la imagen
 
         lbl_qr.place(
             relx=0.5,
@@ -967,13 +927,11 @@ def pantalla_servicios(ventana,scaner):
         )
 
         # ---------------- ID ----------------
-
         lbl_id = ctk.CTkLabel(
             frame,
             text=id_servicio,
             font=ctk.CTkFont(size=26)
         )
-
         lbl_id.grid(
             row=2,
             column=0,
@@ -991,21 +949,17 @@ def pantalla_servicios(ventana,scaner):
         limpiar_ventana(frame)
 
         # ---------------- GRID ----------------
-
         frame.grid_rowconfigure(0, weight=1)
         frame.grid_rowconfigure(1, weight=3)
         frame.grid_rowconfigure(2, weight=1)
-
         frame.grid_columnconfigure(0, weight=1)
 
         # ---------------- TITULO ----------------
-
         titulo = ctk.CTkLabel(
             frame,
             text="Coloca el QR frente a la camara",
             font=ctk.CTkFont(size=24)
         )
-
         titulo.grid(
             row=0,
             column=0,
@@ -1014,32 +968,29 @@ def pantalla_servicios(ventana,scaner):
         )
 
         # ---------------- CAMARA ----------------
-
         frame_camara = ctk.CTkFrame(
             frame,
             width=350,
             height=300
         )
-
         frame_camara.grid(
             row=1,
             column=0,
             padx=20,
             pady=20
         )
-
         frame_camara.grid_propagate(False)
 
         lbl_camara = ctk.CTkLabel(
             frame_camara,
-            #text="CAMARA"
+            text=""
         )
-
         lbl_camara.place(
             relx=0.5,
             rely=0.5,
             anchor="center"
         )
+        
         if scaner is not None:
             scaner.set_label_video(lbl_camara)
             scaner.iniciar_escaneo()
@@ -1048,7 +999,8 @@ def pantalla_servicios(ventana,scaner):
 
         # ---------------- BOTON ----------------
         def cancelar():
-            scaner.detener_escaneo()
+            if scaner is not None:
+                scaner.detener_escaneo()
             estado_inicial()
         
         btn_cancelar = ctk.CTkButton(
@@ -1067,7 +1019,6 @@ def pantalla_servicios(ventana,scaner):
     #endregion
 
     #region flujo 
-    #btn_nuevo = ctk.CTkButton()
     def nuevo():
         vista_registrar_servicio(frame_izquierdo)
         vista_precios(frame_derecho)
@@ -1080,29 +1031,22 @@ def pantalla_servicios(ventana,scaner):
     btn_escanear.configure(command= escanear)
     
     def buscar():
-        # 1. Obtener el texto del entry
         folio_ingresado = entry_id.get()
         
-        # Validar que no esté vacío y sea un número
         if not folio_ingresado or not folio_ingresado.isdigit():
             MostrarPopUp("Error", "Solo se aceptan folios con digitos")
             return
 
-        # 2. Instanciar la entidad Servicio y pasarle el folio
         servicio_buscar = entidades.Servicio()
         servicio_buscar.set_folio_servicio(int(folio_ingresado))
 
-        # 3. Realizar la búsqueda en la BD
         db = servicios_bd()
         servicio_encontrado = db.Buscar(servicio_buscar)
 
-        # 4. Validar el resultado
         if servicio_encontrado:
-            # Si se encontró, mostramos los detalles en la nueva vista
             vista_detalles_servicio(frame_izquierdo, servicio_encontrado)
             vista_qr(frame_derecho, str(servicio_encontrado.get_folio_servicio()))
         else:
-            # Si no se encontró, limpiamos la vista y podemos mostrar error
             estado_inicial()
             MostrarPopUp("Error", "No se encontro ningún servicio con ese folio")
 

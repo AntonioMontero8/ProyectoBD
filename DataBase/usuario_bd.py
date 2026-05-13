@@ -5,7 +5,7 @@ class usuario_bd:
     def HacerLogin(self, Usuario):
         self.con = conn.conection().connect()
         self.cursor1 = self.con.cursor()
-        sql = "SELECT usuario_id, tipo_usuario FROM usuarios WHERE username = %s AND password = %s"
+        sql = "SELECT usuario_id, tipo_usuario FROM usuarios WHERE username = %s AND password = %s AND estado = 1"
         self.cursor1.execute(sql, (Usuario.get_username(), Usuario.get_password()))
         resultado = self.cursor1.fetchone()
         self.con.close()
@@ -17,7 +17,7 @@ class usuario_bd:
     def Buscar(self, Usuario):
         self.con = conn.conection().connect()
         self.cursor1 = self.con.cursor()
-        sql = "SELECT usuario_id, nombre, username, password, tipo_usuario FROM usuarios WHERE usuario_id = %s"
+        sql = "SELECT usuario_id, nombre, username, password, tipo_usuario FROM usuarios WHERE usuario_id = %s AND estado = 1"
         self.cursor1.execute(sql, (Usuario.get_usuario_id(),))
         resultado = self.cursor1.fetchone()
 
@@ -68,7 +68,7 @@ class usuario_bd:
     def Borrar(self, Usuario):
         self.con = conn.conection().connect()
         self.cursor1 = self.con.cursor()
-        sql = "DELETE FROM usuarios WHERE usuario_id = %s"
+        sql = "UPDATE usuarios SET estado = 0 WHERE usuario_id = %s"
         self.cursor1.execute(sql, (Usuario.get_usuario_id(),))
         self.con.commit()
         self.con.close()

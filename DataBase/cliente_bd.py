@@ -5,7 +5,7 @@ class cliente_bd:
     def Buscar(self, Cliente):
         self.con = conn.conection().connect()
         self.cursor1 = self.con.cursor()
-        sql = "SELECT cliente_id, nombre, telefono,email, rfc, CP_domicilio_fiscal, regimen_fiscal, tipo_cliente_park, tipo_cliente_pens FROM clientes WHERE cliente_id = %s"
+        sql = "SELECT cliente_id, nombre, telefono,email, rfc, CP_domicilio_fiscal, regimen_fiscal, tipo_cliente_park, tipo_cliente_pens FROM clientes WHERE cliente_id = %s AND estado = 1"
         self.cursor1.execute(sql, (Cliente.get_cliente_id(),))
         resultado = self.cursor1.fetchone()
 
@@ -39,7 +39,7 @@ class cliente_bd:
         self.cursor1 = self.con.cursor()
         cliente = entidades.Cliente()
         cliente.set_cliente_id(Cliente.get_cliente_id())
-        sql = "DELETE FROM clientes WHERE cliente_id = %s"
+        sql = "UPDATE clientes SET estado = 0 WHERE cliente_id = %s;"
         self.cursor1.execute(sql, (cliente.get_cliente_id(),))
         self.con.commit()
         if self.con.is_connected():
