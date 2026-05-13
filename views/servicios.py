@@ -145,6 +145,7 @@ def pantalla_servicios(ventana,scaner):
         #Vaciamos el contenido de ambos frames para dejarlos como al inicio
         limpiar_ventana(frame_izquierdo)
         limpiar_ventana(frame_derecho)
+
     
     # =========================================================
     # VISTA IZQUIERDA
@@ -502,6 +503,10 @@ def pantalla_servicios(ventana,scaner):
             )
 
         btn_nuevo_vehiculo.configure(command=lambda :abrir_popup_vehiculo(ventana))
+    # =========================================================
+    # VISTA IZQUIERDA
+    # PAGAR SERVICIO
+    # =========================================================
 
     # =========================================================
     # VISTA IZQUIERDA
