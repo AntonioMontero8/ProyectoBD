@@ -7,7 +7,7 @@ class vehiculos_bd:
     def buscar(self, matricula):
         self.con = conn.conection().connect()
         self.cursor1 = self.con.cursor()
-        sql = "SELECT matricula, modelo, marca, color, cliente_id FROM vehiculos WHERE matricula = %s "
+        sql = "SELECT matricula, modelo, marca, color, cliente_id FROM vehiculos WHERE matricula = %s AND estado = 1"
         self.cursor1.execute(sql, (matricula,))
         resultado = self.cursor1.fetchone()
         self.con.close()     

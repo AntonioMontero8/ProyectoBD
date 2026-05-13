@@ -3,25 +3,31 @@ from utils.helpers import limpiar_ventana
 from utils.entidades import Vehiculo
 from DataBase.vehiculos_bd import vehiculos_bd
 from myCustomTkinter import mostrar_mensaje, confirmar_mensaje
+
 import re
 
 veh_bd = vehiculos_bd()
 modo = ""
-
 def pantalla_vehiculos(ventana, dueno_id= None, callback_guardar=None):
     #region validaciones
     def validar_matricula(texto):
         if texto == "":
             return True
+
         patron = r"^[A-Za-z]{0,2}[0-9]{0,4}$"
         return re.match(patron, texto) is not None
 
+    # CONVERTIR A MAYÚSCULAS
     def convertir_mayusculas(event):
         entry = event.widget
+
         posicion = entry.index("insert")
+
         texto = entry.get().upper()
+
         entry.delete(0, "end")
         entry.insert(0, texto)
+
         entry.icursor(posicion)
 
     v_matricula = ventana.register(validar_matricula)
@@ -42,10 +48,12 @@ def pantalla_vehiculos(ventana, dueno_id= None, callback_guardar=None):
     try:
         limpiar_ventana(ventana)
     except:
+        # En caso de que ventana sea un CTkToplevel, usamos esto:
         for widget in ventana.winfo_children():
             widget.destroy()
 
     # ---------------- CONFIGURACIÓN GRID PRINCIPAL ----------------
+    # Se mantiene exactamente igual a tu diseño original
     ventana.grid_rowconfigure(0, weight=1)  # espacio arriba
     ventana.grid_rowconfigure(1, weight=0)  # titulo + búsqueda
     ventana.grid_rowconfigure(2, weight=3)  # centro (form)
@@ -57,6 +65,7 @@ def pantalla_vehiculos(ventana, dueno_id= None, callback_guardar=None):
     frame_top.grid(row=0, column=0, sticky="ns")
     frame_top.grid_columnconfigure((0, 1, 2), weight=1)
 
+    # Título (Cambia ligeramente según el modo)
     texto_titulo = "vehículos" if callback_guardar else "nuevo vehículo"
     titulo = ctk.CTkLabel(
         frame_top,
@@ -65,6 +74,7 @@ def pantalla_vehiculos(ventana, dueno_id= None, callback_guardar=None):
     )
     titulo.grid(row=0, column=0, columnspan=3, pady=(10, 15), sticky="n")
 
+    # Barra de búsqueda (SOLO SE MUESTRA EN MODO COMPLETO)
     if not callback_guardar:
         lbl_buscar = ctk.CTkLabel(frame_top, text="matricula:")
         lbl_buscar.grid(row=1, column=0, sticky="e", padx=5)
@@ -86,7 +96,7 @@ def pantalla_vehiculos(ventana, dueno_id= None, callback_guardar=None):
     frame_form.grid_columnconfigure(1, weight=1)
 
     campos = ["matricula:", "marca:", "modelo:", "color:", "ID del dueño:"]
-    entries = {} 
+    entries = {} # Usamos diccionario para extraer datos fácilmente luego
 
     for i, texto in enumerate(campos):
         lbl = ctk.CTkLabel(frame_form, text=texto)
@@ -107,6 +117,7 @@ def pantalla_vehiculos(ventana, dueno_id= None, callback_guardar=None):
         entries["ID del dueño:"].insert(0,dueno_id)
         entries["ID del dueño:"].configure(state="readonly",fg_color="#242424",   border_color="#242424")
         
+    # Botones del form (SOLO EN MODO COMPLETO)
     if not callback_guardar:
         frame_botones = ctk.CTkFrame(frame_form, fg_color="transparent")
         frame_botones.grid(row=5, column=0, columnspan=2, pady=15)
@@ -148,7 +159,9 @@ def pantalla_vehiculos(ventana, dueno_id= None, callback_guardar=None):
             btn_editar.configure(state="normal")
             btn_eliminar.configure(state="normal")
             btn_nuevo.configure(state="disabled")
+
             btn_cancelar.configure(state="normal")
+
         btn_guardar.configure(state="disabled")
 
     if not callback_guardar:
@@ -195,6 +208,7 @@ def pantalla_vehiculos(ventana, dueno_id= None, callback_guardar=None):
     if not callback_guardar:
         btn_nuevo.configure(command=nuevo)
 
+    # Lógica para cancelar
     def cancelar():
         if callback_guardar:
             print(entries["ID del dueño:"].get())
@@ -207,14 +221,20 @@ def pantalla_vehiculos(ventana, dueno_id= None, callback_guardar=None):
 
             btn_editar.configure(state="disabled")
             btn_eliminar.configure(state="disabled")
+
+            btn_editar.configure(state="disabled")
+            btn_eliminar.configure(state="disabled")
             btn_nuevo.configure(state="normal")
+
             btn_guardar.configure(state="disabled")
             btn_cancelar.configure(state="disabled")
+
             modo = ""
 
     btn_cancelar = ctk.CTkButton(frame_bottom, text="cancelar", width=120, command=cancelar)
     btn_cancelar.pack(side="left", padx=10)
 
+    # Lógica para guardar
     def guardar():
         global modo
         for entry in entries.values():
@@ -222,12 +242,11 @@ def pantalla_vehiculos(ventana, dueno_id= None, callback_guardar=None):
                 mostrar_mensaje("","Es nesesario llenar\ntodos los campos")
                 return
 
-        patron = r"^[A-Z]{2,2}[0-9]{4,4}$"
-        matricula_texto = entries["matricula:"].get()
-        if re.match(patron, matricula_texto) is None:
-            mostrar_mensaje("","La matricula debe tener\nel formato 'AA0000'")
+        patron = r"^[A-Z]{2}\d{4}$"
+        if not re.match(patron, entries["matricula:"].get()) :
+            mostrar_mensaje("","la matricula debe tener\nel formato 'AA0000'")
             return
-
+        print("M BIEN")
         veh = Vehiculo()
         veh.set_matricula(entries["matricula:"].get())
         veh.set_modelo(entries["modelo:"].get())
@@ -237,11 +256,12 @@ def pantalla_vehiculos(ventana, dueno_id= None, callback_guardar=None):
 
         if modo == "nuevo":
             res = veh_bd.guardar(veh)
+
             mostrar_mensaje("",res[1])
 
             if res[0]:
                 if callback_guardar and res:
-                    callback_guardar(veh.set_matricula)
+                    callback_guardar(veh.get_matricula())
                     ventana.destroy()
                 else:
                     btn_guardar.configure(state="disabled")
@@ -254,13 +274,23 @@ def pantalla_vehiculos(ventana, dueno_id= None, callback_guardar=None):
                 entry_buscar.delete(0,"end")
                 entry_buscar.insert(0,entries["matricula:"].get())
                 btn_nuevo.configure(state="disabled")
+                #btn_cancelar.configure(state="disabled")
                 buscar()
                 btn_guardar.configure(state="disabled")
                 btn_cancelar.configure(state="disabled")
+                
                 modo = ""
         
     btn_guardar = ctk.CTkButton(frame_bottom, text="guardar", width=120, command=guardar)
     btn_guardar.pack(side="left", padx=10)
 
-    if not callback_guardar:
+    
+    if callback_guardar:
+        modo = "nuevo"
+    else:
         cancelar()
+
+if __name__ == "__main__":
+    app = ctk.CTk()
+    pantalla_vehiculos(app)
+    app.mainloop()

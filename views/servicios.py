@@ -8,9 +8,10 @@ from DataBase.vehiculos_bd import vehiculos_bd
 from DataBase.estacionamiento_bd import estacionamiento_bd
 from DataBase.cobros_bd import cobro_bd
 from datetime import datetime
+from views.vehiculos import pantalla_vehiculos
+from myCustomTkinter import mostrar_mensaje
 
 from utils.helpers import limpiar_ventana
-
 def MostrarPopUp(titulo, mensaje):
     popup = ctk.CTkToplevel()
     popup.title(titulo)
@@ -263,6 +264,7 @@ def pantalla_servicios(ventana,scaner):
         frame.grid_rowconfigure(0, weight=1)
         frame.grid_rowconfigure(1, weight=0)
         frame.grid_rowconfigure(2, weight=1)
+
         frame.grid_columnconfigure(0, weight=1)
 
         # ---------------- TITULO ----------------
@@ -278,6 +280,7 @@ def pantalla_servicios(ventana,scaner):
         frame_form.grid(row=1, column=0, padx=20, pady=10)
         frame_form.grid_columnconfigure(1, weight=1)
 
+        # 1. ID CLIENTE
         lbl_id_cliente = ctk.CTkLabel(frame_form, text="ID cliente:")
         lbl_id_cliente.grid(row=0, column=0, padx=10, pady=8, sticky="e")
 
@@ -293,6 +296,7 @@ def pantalla_servicios(ventana,scaner):
         lbl_estado_cliente = ctk.CTkLabel(frame_cliente, text="", font=ctk.CTkFont(size=12))
         lbl_estado_cliente.pack(side="left", padx=10)
 
+        # 2. VEHICULO
         lbl_vehiculo = ctk.CTkLabel(frame_form, text="Vehículo:")
         lbl_vehiculo.grid(row=1, column=0, padx=10, pady=8, sticky="e")
 
@@ -305,36 +309,44 @@ def pantalla_servicios(ventana,scaner):
         btn_nuevo_vehiculo = ctk.CTkButton(frame_vehiculo, text="nuevo", width=100)
         btn_nuevo_vehiculo.pack(side="right")
 
+        # 3. FECHA ENTRADA
         lbl_fecha = ctk.CTkLabel(frame_form, text="Fecha entrada:")
         lbl_fecha.grid(row=2, column=0, padx=10, pady=8, sticky="e")
         
         entry_fecha = ctk.CTkEntry(frame_form, width=300, placeholder_text="AAAA-MM-DD")
         entry_fecha.grid(row=2, column=1, padx=10, pady=8)
 
+        # 4. HORA ENTRADA (Ajustado a HH:MM)
         lbl_hora = ctk.CTkLabel(frame_form, text="Hora entrada:")
         lbl_hora.grid(row=3, column=0, padx=10, pady=8, sticky="e")
         
         entry_hora = ctk.CTkEntry(frame_form, width=300, placeholder_text="HH:MM")
         entry_hora.grid(row=3, column=1, padx=10, pady=8)
 
+        # 5. TIPO SERVICIO
         lbl_servicio = ctk.CTkLabel(frame_form, text="Tipo de servicio:")
         lbl_servicio.grid(row=4, column=0, padx=10, pady=8, sticky="e")
 
         option_servicio = ctk.CTkOptionMenu(frame_form, values=["Estacionamiento", "Pensión"])
         option_servicio.grid(row=4, column=1, padx=10, pady=8, sticky="we")
 
+        # 6. ESTABLECIMIENTO
         lbl_estacionamiento = ctk.CTkLabel(frame_form, text="ID Establecimiento:")
         lbl_estacionamiento.grid(row=5, column=0, padx=10, pady=8, sticky="e")
         
         entry_estacionamiento = ctk.CTkEntry(frame_form, width=300)
         entry_estacionamiento.grid(row=5, column=1, padx=10, pady=8)
 
+        #Label para mostrar errores de guardado
         lbl_mensaje_guardar = ctk.CTkLabel(frame_form, text="", font=ctk.CTkFont(size=12))
         lbl_mensaje_guardar.grid(row=6, column=0, columnspan=2, pady=5)
 
         # ---------------- LÓGICA DE VERIFICACIÓN ----------------
+        #En esta función, verificamos si el cliente existe o no, en caso de que si, se buscan los vehiculos que tenga registrado a su nombre
         def verificar_cliente():
+            encontrado = False
             id_ingresado = entry_id_cliente.get()
+            
             if not id_ingresado.isdigit():
                 lbl_estado_cliente.configure(text="ID inválido", text_color="red")
                 return
@@ -346,6 +358,7 @@ def pantalla_servicios(ventana,scaner):
             cliente_encontrado = db_cliente.Buscar(cliente_temp)
 
             if cliente_encontrado:
+                encontrado = True
                 lbl_estado_cliente.configure(text=f"Ok: {cliente_encontrado.get_nombre()}", text_color="green")
                 
                 db_vehiculo = vehiculos_bd()
@@ -362,37 +375,45 @@ def pantalla_servicios(ventana,scaner):
                 lbl_estado_cliente.configure(text="El cliente no existe", text_color="red")
                 option_vehiculo.configure(values=["---"])
                 option_vehiculo.set("---")
+            return encontrado
 
         btn_verificar.configure(command=verificar_cliente)
 
         # ---------------- LÓGICA DE GUARDADO ----------------
         def guardar_servicio():
+            #Usamos datetime para comprobar que los formatos de fecha y hora introducidos sean correctos
             id_cliente = entry_id_cliente.get().strip()
             fecha = entry_fecha.get().strip()
             hora = entry_hora.get().strip()
             id_est = entry_estacionamiento.get().strip()
             vehiculo = option_vehiculo.get()
             
+            # 1. Validar que no haya campos vacíos
             if not id_cliente or not id_est or not fecha or not hora or vehiculo in ["---", "Sin vehículos"]:
                 lbl_mensaje_guardar.configure(text="Error: Todos los campos son obligatorios.", text_color="red")
                 return
 
+            # 2. Validar formato de Fecha (AAAA-MM-DD)
             try:
                 datetime.strptime(fecha, "%Y-%m-%d")
             except ValueError:
                 lbl_mensaje_guardar.configure(text="Error: La fecha debe tener el formato AAAA-MM-DD.", text_color="red")
                 return
 
+            # 3. Validar formato de Hora (HH:MM)
             try:
+                # El formato %H:%M acepta desde 00:00 hasta 23:59
                 datetime.strptime(hora, "%H:%M")
             except ValueError:
                 lbl_mensaje_guardar.configure(text="Error: La hora debe tener el formato HH:MM.", text_color="red")
                 return
             
+            # 4. Validar que el ID del establecimiento sea numérico
             if not id_est.isdigit():
                 lbl_mensaje_guardar.configure(text="Error: ID de establecimiento inválido.", text_color="red")
                 return
 
+            # 5. Validar existencia del establecimiento en la BD
             est_temp = entidades.Estacionamiento()
             est_temp.set_estacionamiento_id(int(id_est))
             
@@ -403,6 +424,7 @@ def pantalla_servicios(ventana,scaner):
                 lbl_mensaje_guardar.configure(text="Error: El establecimiento no existe en la BD.", text_color="red")
                 return
             
+           #Preparamos la entidad Servicio (en singular)
             nuevo_servicio = entidades.Servicio()
             nuevo_servicio.set_estacionamiento_id(int(id_est))
             nuevo_servicio.set_matricula(vehiculo)
@@ -413,6 +435,7 @@ def pantalla_servicios(ventana,scaner):
             nuevo_servicio.set_hora_salida("")
             nuevo_servicio.set_folio_precio(0)
 
+            # Llamamos al método para guardar entradas en la base de datos
             db_servicio = servicios_bd()
             exito = db_servicio.Guardar_Servicio(nuevo_servicio)
 
@@ -420,11 +443,15 @@ def pantalla_servicios(ventana,scaner):
                 folio_generado = nuevo_servicio.get_folio_servicio()
                 lbl_mensaje_guardar.configure(text=f"Servicio guardado exitosamente. Folio: {folio_generado}", text_color="green")
                 
+                # =========================================================
+                # MAGIA AQUÍ: Mandamos llamar a la vista QR en el panel derecho
+                # =========================================================
                 vista_qr(frame_derecho, str(folio_generado))
                 btn_guardar.configure(state="disabled")
                 btn_cancelar.configure(text="Regresar")
             else:
                 lbl_mensaje_guardar.configure(text="Error al intentar guardar el servicio.", text_color="red")
+
 
         # ---------------- BOTONES INFERIORES ----------------
         frame_bottom = ctk.CTkFrame(frame, fg_color="transparent")
@@ -445,6 +472,36 @@ def pantalla_servicios(ventana,scaner):
             command=guardar_servicio
         )
         btn_guardar.pack(side="left", padx=10)
+
+        # CALLBACK QUE SE EJECUTA AL GUARDAR VEHÍCULO
+        def callback_guardar_vehiculo(matricula):
+            verificar_cliente()
+            option_vehiculo.set(matricula)
+
+        # ABRIR POPUP DE VEHÍCULOS
+        def abrir_popup_vehiculo(ventana_padre):
+
+            cliente_id = entry_id_cliente.get()
+
+            if not verificar_cliente():
+                mostrar_mensaje("", "Primero debe seleccionar\nun cliente valido")
+                return
+
+            popup = ctk.CTkToplevel(ventana_padre)
+
+            popup.title("Nuevo vehículo")
+            popup.geometry("700x500")
+
+            popup.transient(ventana_padre)
+            popup.grab_set()
+
+            pantalla_vehiculos(
+                ventana=popup,
+                dueno_id=cliente_id,
+                callback_guardar= callback_guardar_vehiculo
+            )
+
+        btn_nuevo_vehiculo.configure(command=lambda :abrir_popup_vehiculo(ventana))
 
     # =========================================================
     # VISTA IZQUIERDA
